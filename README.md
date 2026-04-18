@@ -21,7 +21,7 @@ Port of [zca-js](https://github.com/RFS-ADRENO/zca-js) to Java.
 
 ```xml
 <dependency>
-    <groupId>com.suprim</groupId>
+    <groupId>dev.suprim</groupId>
     <artifactId>zava</artifactId>
     <version>0.1.0-SNAPSHOT</version>
 </dependency>

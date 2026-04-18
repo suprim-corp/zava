@@ -73,7 +73,7 @@ Chi tiết lý do chọn từng version: xem [ZCA-JS-REFERENCE.md#93-version-dec
 ## 3. Package Structure
 
 ```
-com.suprim.zava/
+dev.suprim.zava/
 │
 ├── Zava.java                          // Entry point
 │   ├── login(Credentials) -> ZavaClient
@@ -713,4 +713,4 @@ Upload callback TTL:   5 minutes
 MD5 chunk size:        2MB (2097152 bytes)
 ```
 
-Tất cả nằm trong `com.suprim.zava.core.Constants.java`.
+Tất cả nằm trong `dev.suprim.zava.core.Constants.java`.
