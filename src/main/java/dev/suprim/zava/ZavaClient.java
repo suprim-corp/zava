@@ -1,5 +1,7 @@
 package dev.suprim.zava;
 
+import dev.suprim.zava.board.BoardService;
+import dev.suprim.zava.business.BusinessService;
 import dev.suprim.zava.group.GroupService;
 import dev.suprim.zava.internal.http.HttpClient;
 import dev.suprim.zava.internal.http.ResponseHandler;
@@ -9,6 +11,7 @@ import dev.suprim.zava.message.MessageService;
 import dev.suprim.zava.poll.PollService;
 import dev.suprim.zava.profile.ProfileService;
 import dev.suprim.zava.reaction.ReactionService;
+import dev.suprim.zava.reminder.ReminderService;
 import dev.suprim.zava.settings.SettingsService;
 import dev.suprim.zava.sticker.StickerService;
 import dev.suprim.zava.user.UserService;
@@ -29,7 +32,6 @@ public class ZavaClient {
     private final HttpClient httpClient;
     private final ResponseHandler responseHandler;
 
-    // Lazy-initialized services
     private volatile MessageService messageService;
     private volatile UserService userService;
     private volatile GroupService groupService;
@@ -38,6 +40,9 @@ public class ZavaClient {
     private volatile PollService pollService;
     private volatile ProfileService profileService;
     private volatile SettingsService settingsService;
+    private volatile BoardService boardService;
+    private volatile ReminderService reminderService;
+    private volatile BusinessService businessService;
     private volatile ZavaListener listener;
 
     ZavaClient(Context context) {
@@ -46,114 +51,105 @@ public class ZavaClient {
         this.responseHandler = new ResponseHandler(context);
     }
 
-    /** Get the logged-in user's UID. */
     public String getUid() { return context.getUid(); }
 
-    /** Message operations: send, delete, undo, forward. */
+    /** Messages: send, delete, undo, forward, typing, seen, delivered, sticker. */
     public MessageService messages() {
-        if (messageService == null) {
-            synchronized (this) {
-                if (messageService == null)
-                    messageService = new MessageService(context, httpClient, responseHandler);
-            }
+        if (messageService == null) synchronized (this) {
+            if (messageService == null) messageService = new MessageService(context, httpClient, responseHandler);
         }
         return messageService;
     }
 
-    /** User/friend operations: find, list, block/unblock, alias. */
+    /** Users: find, info, friends, block, alias, friend requests. */
     public UserService users() {
-        if (userService == null) {
-            synchronized (this) {
-                if (userService == null)
-                    userService = new UserService(context, httpClient, responseHandler);
-            }
+        if (userService == null) synchronized (this) {
+            if (userService == null) userService = new UserService(context, httpClient, responseHandler);
         }
         return userService;
     }
 
-    /** Group operations: info, create, members, settings. */
+    /** Groups: info, create, members, deputies, settings, leave, history. */
     public GroupService groups() {
-        if (groupService == null) {
-            synchronized (this) {
-                if (groupService == null)
-                    groupService = new GroupService(context, httpClient, responseHandler);
-            }
+        if (groupService == null) synchronized (this) {
+            if (groupService == null) groupService = new GroupService(context, httpClient, responseHandler);
         }
         return groupService;
     }
 
-    /** Reaction operations: add reactions. */
+    /** Reactions: add reactions. */
     public ReactionService reactions() {
-        if (reactionService == null) {
-            synchronized (this) {
-                if (reactionService == null)
-                    reactionService = new ReactionService(context, httpClient, responseHandler);
-            }
+        if (reactionService == null) synchronized (this) {
+            if (reactionService == null) reactionService = new ReactionService(context, httpClient, responseHandler);
         }
         return reactionService;
     }
 
-    /** Sticker operations: search. */
+    /** Stickers: search, detail. */
     public StickerService stickers() {
-        if (stickerService == null) {
-            synchronized (this) {
-                if (stickerService == null)
-                    stickerService = new StickerService(context, httpClient, responseHandler);
-            }
+        if (stickerService == null) synchronized (this) {
+            if (stickerService == null) stickerService = new StickerService(context, httpClient, responseHandler);
         }
         return stickerService;
     }
 
-    /** Poll operations: create, detail. */
+    /** Polls: create, detail, add options, lock. */
     public PollService polls() {
-        if (pollService == null) {
-            synchronized (this) {
-                if (pollService == null)
-                    pollService = new PollService(context, httpClient, responseHandler);
-            }
+        if (pollService == null) synchronized (this) {
+            if (pollService == null) pollService = new PollService(context, httpClient, responseHandler);
         }
         return pollService;
     }
 
-    /** Profile operations: account info. */
+    /** Profile: account info, bio update. */
     public ProfileService profile() {
-        if (profileService == null) {
-            synchronized (this) {
-                if (profileService == null)
-                    profileService = new ProfileService(context, httpClient, responseHandler);
-            }
+        if (profileService == null) synchronized (this) {
+            if (profileService == null) profileService = new ProfileService(context, httpClient, responseHandler);
         }
         return profileService;
     }
 
-    /** Settings operations: mute, labels. */
+    /** Settings: mute, labels, delete chat, pin conversations. */
     public SettingsService settings() {
-        if (settingsService == null) {
-            synchronized (this) {
-                if (settingsService == null)
-                    settingsService = new SettingsService(context, httpClient, responseHandler);
-            }
+        if (settingsService == null) synchronized (this) {
+            if (settingsService == null) settingsService = new SettingsService(context, httpClient, responseHandler);
         }
         return settingsService;
     }
 
-    /** Real-time event listener. */
+    /** Board: notes CRUD, list. */
+    public BoardService board() {
+        if (boardService == null) synchronized (this) {
+            if (boardService == null) boardService = new BoardService(context, httpClient, responseHandler);
+        }
+        return boardService;
+    }
+
+    /** Reminders: create, list. */
+    public ReminderService reminders() {
+        if (reminderService == null) synchronized (this) {
+            if (reminderService == null) reminderService = new ReminderService(context, httpClient, responseHandler);
+        }
+        return reminderService;
+    }
+
+    /** Business: auto-reply, quick messages. */
+    public BusinessService business() {
+        if (businessService == null) synchronized (this) {
+            if (businessService == null) businessService = new BusinessService(context, httpClient, responseHandler);
+        }
+        return businessService;
+    }
+
+    /** Real-time event listener with typed callbacks. */
     public ZavaListener listener() {
-        if (listener == null) {
-            synchronized (this) {
-                if (listener == null)
-                    listener = new ZavaListener(context, httpClient.getOkHttpClient());
-            }
+        if (listener == null) synchronized (this) {
+            if (listener == null) listener = new ZavaListener(context, httpClient.getOkHttpClient());
         }
         return listener;
     }
 
-    /** Get the session context (internal). */
     public Context getContext() { return context; }
-
-    /** Get the HTTP client (internal). */
     public HttpClient getHttpClient() { return httpClient; }
-
-    /** Get the response handler (internal). */
     public ResponseHandler getResponseHandler() { return responseHandler; }
 }

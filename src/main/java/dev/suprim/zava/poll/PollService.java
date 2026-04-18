@@ -71,4 +71,38 @@ public class PollService extends BaseService {
 
         return encryptedPostRaw("group", "/api/poll/detail", params);
     }
+
+    /**
+     * Add new options to an existing poll.
+     *
+     * @param pollId    the poll ID
+     * @param options   new options to add
+     */
+    public JsonNode addOptions(long pollId, List<String> options) {
+        Objects.requireNonNull(options, "options must not be null");
+
+        try {
+            Map<String, Object> params = new LinkedHashMap<>();
+            params.put("poll_id", pollId);
+            params.put("new_options", MAPPER.writeValueAsString(options));
+            params.put("voted_option_ids", "[]");
+
+            return encryptedGetRaw("group", "/api/poll/option/add", params);
+        } catch (Exception e) {
+            throw new dev.suprim.zava.exception.ZavaException("Failed to add poll options", e);
+        }
+    }
+
+    /**
+     * Lock (end) a poll.
+     *
+     * @param pollId the poll ID
+     */
+    public JsonNode lock(long pollId) {
+        Map<String, Object> params = new LinkedHashMap<>();
+        params.put("poll_id", pollId);
+        params.put("imei", context.getImei());
+
+        return encryptedPostRaw("group", "/api/poll/end", params);
+    }
 }

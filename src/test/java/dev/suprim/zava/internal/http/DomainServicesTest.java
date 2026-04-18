@@ -3,6 +3,8 @@ package dev.suprim.zava.internal.http;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.suprim.zava.ZavaOptions;
+import dev.suprim.zava.board.BoardService;
+import dev.suprim.zava.business.BusinessService;
 import dev.suprim.zava.conversation.ThreadType;
 import dev.suprim.zava.group.GroupService;
 import dev.suprim.zava.internal.crypto.AesCbc;
@@ -11,9 +13,11 @@ import dev.suprim.zava.internal.session.ServiceMap;
 import dev.suprim.zava.poll.PollService;
 import dev.suprim.zava.profile.ProfileService;
 import dev.suprim.zava.reaction.ReactionService;
+import dev.suprim.zava.reminder.ReminderService;
 import dev.suprim.zava.settings.SettingsService;
 import dev.suprim.zava.sticker.StickerService;
 import dev.suprim.zava.user.UserService;
+import dev.suprim.zava.message.MessageService;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
@@ -54,7 +58,8 @@ class DomainServicesTest {
 
         ServiceMap sm = new ServiceMap();
         for (String s : List.of("chat", "group", "group_poll", "friend", "profile",
-                "reaction", "sticker", "label", "alias", "file")) {
+                "reaction", "sticker", "label", "alias", "file", "conversation",
+                "group_board", "auto_reply", "quick_message")) {
             sm.addService(s, List.of(baseUrl));
         }
 
@@ -291,5 +296,207 @@ class DomainServicesTest {
         SettingsService svc = new SettingsService(context, http, handler);
         svc.getLabels();
         assertTrue(server.takeRequest().getPath().contains("/api/convlabel/get"));
+    }
+
+    // ── New UserService methods ──────────────────────────────────────────
+
+    @Test @DisplayName("findUserByUsername GETs /api/friend/search/by-user-name")
+    void findUserByUsername() throws Exception {
+        enqueueOk();
+        new UserService(context, http, handler).findUserByUsername("testuser");
+        assertTrue(server.takeRequest().getPath().contains("/api/friend/search/by-user-name"));
+    }
+
+    @Test @DisplayName("getUserInfo POSTs to /api/social/friend/getprofiles/v2")
+    void getUserInfo() throws Exception {
+        enqueueOk();
+        new UserService(context, http, handler).getUserInfo("uid1", "uid2");
+        assertTrue(server.takeRequest().getPath().contains("/api/social/friend/getprofiles/v2"));
+    }
+
+    @Test @DisplayName("sendFriendRequest POSTs to /api/friend/sendreq")
+    void sendFriendRequest() throws Exception {
+        enqueueOk();
+        new UserService(context, http, handler).sendFriendRequest("uid1", "Hello!");
+        assertTrue(server.takeRequest().getPath().contains("/api/friend/sendreq"));
+    }
+
+    @Test @DisplayName("acceptFriendRequest POSTs to /api/friend/accept")
+    void acceptFriendRequest() throws Exception {
+        enqueueOk();
+        new UserService(context, http, handler).acceptFriendRequest("uid1");
+        assertTrue(server.takeRequest().getPath().contains("/api/friend/accept"));
+    }
+
+    @Test @DisplayName("removeFriend POSTs to /api/friend/remove")
+    void removeFriend() throws Exception {
+        enqueueOk();
+        new UserService(context, http, handler).removeFriend("uid1");
+        assertTrue(server.takeRequest().getPath().contains("/api/friend/remove"));
+    }
+
+    // ── New GroupService methods ─────────────────────────────────────────
+
+    @Test @DisplayName("getMembersInfo GETs /api/social/group/members")
+    void getMembersInfo() throws Exception {
+        enqueueOk();
+        new GroupService(context, http, handler).getMembersInfo("uid1");
+        assertTrue(server.takeRequest().getPath().contains("/api/social/group/members"));
+    }
+
+    @Test @DisplayName("addDeputy GETs /api/group/admins/add")
+    void addDeputy() throws Exception {
+        enqueueOk();
+        new GroupService(context, http, handler).addDeputy("g1", "uid1");
+        assertTrue(server.takeRequest().getPath().contains("/api/group/admins/add"));
+    }
+
+    @Test @DisplayName("removeDeputy GETs /api/group/admins/remove")
+    void removeDeputy() throws Exception {
+        enqueueOk();
+        new GroupService(context, http, handler).removeDeputy("g1", "uid1");
+        assertTrue(server.takeRequest().getPath().contains("/api/group/admins/remove"));
+    }
+
+    @Test @DisplayName("leave POSTs to /api/group/leave")
+    void leaveGroup() throws Exception {
+        enqueueOk();
+        new GroupService(context, http, handler).leave("g1");
+        assertTrue(server.takeRequest().getPath().contains("/api/group/leave"));
+    }
+
+    @Test @DisplayName("disperse POSTs to /api/group/disperse")
+    void disperseGroup() throws Exception {
+        enqueueOk();
+        new GroupService(context, http, handler).disperse("g1");
+        assertTrue(server.takeRequest().getPath().contains("/api/group/disperse"));
+    }
+
+    @Test @DisplayName("getChatHistory GETs /api/group/history")
+    void getChatHistory() throws Exception {
+        enqueueOk();
+        new GroupService(context, http, handler).getChatHistory("g1");
+        assertTrue(server.takeRequest().getPath().contains("/api/group/history"));
+    }
+
+    // ── New MessageService methods ───────────────────────────────────────
+
+    @Test @DisplayName("sendTypingEvent POSTs to /api/message/typing")
+    void sendTypingEvent() throws Exception {
+        enqueueOk();
+        new MessageService(context, http, handler).sendTypingEvent("uid1", ThreadType.USER);
+        assertTrue(server.takeRequest().getPath().contains("/api/message/typing"));
+    }
+
+    @Test @DisplayName("sendSticker POSTs to /api/message/sticker")
+    void sendSticker() throws Exception {
+        enqueueOk();
+        new MessageService(context, http, handler).sendSticker(1, 1, "uid1", ThreadType.USER);
+        assertTrue(server.takeRequest().getPath().contains("/api/message/sticker"));
+    }
+
+    // ── New PollService methods ──────────────────────────────────────────
+
+    @Test @DisplayName("lockPoll POSTs to /api/poll/end")
+    void lockPoll() throws Exception {
+        enqueueOk();
+        new PollService(context, http, handler).lock(123);
+        assertTrue(server.takeRequest().getPath().contains("/api/poll/end"));
+    }
+
+    // ── New SettingsService methods ──────────────────────────────────────
+
+    @Test @DisplayName("setMute POSTs to /api/social/profile/setmute")
+    void setMute() throws Exception {
+        enqueueOk();
+        new SettingsService(context, http, handler).setMute("uid1", ThreadType.USER, 0, true);
+        assertTrue(server.takeRequest().getPath().contains("/api/social/profile/setmute"));
+    }
+
+    @Test @DisplayName("deleteChat POSTs to /api/message/deleteconver")
+    void deleteChat() throws Exception {
+        enqueueOk();
+        new SettingsService(context, http, handler).deleteChat("uid1", ThreadType.USER, true);
+        assertTrue(server.takeRequest().getPath().contains("/api/message/deleteconver"));
+    }
+
+    // ── New StickerService methods ───────────────────────────────────────
+
+    @Test @DisplayName("getDetail GETs /api/message/sticker/sticker_detail")
+    void getStickersDetail() throws Exception {
+        enqueueOk();
+        new StickerService(context, http, handler).getDetail(123);
+        assertTrue(server.takeRequest().getPath().contains("/api/message/sticker/sticker_detail"));
+    }
+
+    // ── ProfileService ───────────────────────────────────────────────────
+
+    @Test @DisplayName("updateBio POSTs to /api/social/profile/update")
+    void updateBio() throws Exception {
+        enqueueOk();
+        new ProfileService(context, http, handler).updateBio("Hello world");
+        assertTrue(server.takeRequest().getPath().contains("/api/social/profile/update"));
+    }
+
+    // ── BoardService ─────────────────────────────────────────────────────
+
+    @Test @DisplayName("createNote POSTs to /api/board/topic/createv2")
+    void createNote() throws Exception {
+        enqueueOk();
+        new BoardService(context, http, handler).createNote("g1", "Test", null, null);
+        assertTrue(server.takeRequest().getPath().contains("/api/board/topic/createv2"));
+    }
+
+    @Test @DisplayName("getListBoard GETs /api/board/list")
+    void getListBoard() throws Exception {
+        enqueueOk();
+        new BoardService(context, http, handler).getListBoard("g1");
+        assertTrue(server.takeRequest().getPath().contains("/api/board/list"));
+    }
+
+    // ── ReminderService ──────────────────────────────────────────────────
+
+    @Test @DisplayName("createReminder POSTs to /api/board/topic/createv2")
+    void createReminder() throws Exception {
+        enqueueOk();
+        new ReminderService(context, http, handler).createReminder("g1", "Test", System.currentTimeMillis(), 3600, 0);
+        assertTrue(server.takeRequest().getPath().contains("/api/board/topic/createv2"));
+    }
+
+    @Test @DisplayName("getListReminder GETs /api/board/listReminder")
+    void getListReminder() throws Exception {
+        enqueueOk();
+        new ReminderService(context, http, handler).getListReminder("g1");
+        assertTrue(server.takeRequest().getPath().contains("/api/board/listReminder"));
+    }
+
+    // ── BusinessService ──────────────────────────────────────────────────
+
+    @Test @DisplayName("getAutoReplyList GETs /api/autoreply/list")
+    void getAutoReplyList() throws Exception {
+        enqueueOk();
+        new BusinessService(context, http, handler).getAutoReplyList();
+        assertTrue(server.takeRequest().getPath().contains("/api/autoreply/list"));
+    }
+
+    @Test @DisplayName("createAutoReply POSTs to /api/autoreply/create")
+    void createAutoReply() throws Exception {
+        enqueueOk();
+        new BusinessService(context, http, handler).createAutoReply("Hello", true, 0, 0);
+        assertTrue(server.takeRequest().getPath().contains("/api/autoreply/create"));
+    }
+
+    @Test @DisplayName("getQuickMessageList GETs /api/quickmessage/list")
+    void getQuickMessageList() throws Exception {
+        enqueueOk();
+        new BusinessService(context, http, handler).getQuickMessageList();
+        assertTrue(server.takeRequest().getPath().contains("/api/quickmessage/list"));
+    }
+
+    @Test @DisplayName("addQuickMessage GETs /api/quickmessage/create")
+    void addQuickMessage() throws Exception {
+        enqueueOk();
+        new BusinessService(context, http, handler).addQuickMessage("hi", "Hello!");
+        assertTrue(server.takeRequest().getPath().contains("/api/quickmessage/create"));
     }
 }

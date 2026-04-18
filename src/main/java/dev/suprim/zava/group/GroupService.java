@@ -153,4 +153,114 @@ public class GroupService extends BaseService {
 
         return encryptedPostRaw("group", "/api/group/updateinfo", params);
     }
+
+    /**
+     * Get members info for a group.
+     */
+    public JsonNode getMembersInfo(String... memberIds) {
+        Objects.requireNonNull(memberIds, "memberIds must not be null");
+
+        Map<String, Integer> memberMap = new LinkedHashMap<>();
+        for (String id : memberIds) memberMap.put(id, 0);
+
+        try {
+            Map<String, Object> params = new LinkedHashMap<>();
+            params.put("friend_pversion_map", MAPPER.writeValueAsString(memberMap));
+            return encryptedGetRaw("profile", "/api/social/group/members", params);
+        } catch (Exception e) {
+            throw new dev.suprim.zava.exception.ZavaException("Failed to get members info", e);
+        }
+    }
+
+    /**
+     * Add a deputy (admin) to a group.
+     */
+    public JsonNode addDeputy(String groupId, String... memberIds) {
+        Objects.requireNonNull(groupId, "groupId must not be null");
+
+        Map<String, Object> params = new LinkedHashMap<>();
+        params.put("grid", groupId);
+        params.put("members", Arrays.asList(memberIds));
+        params.put("imei", context.getImei());
+
+        return encryptedGetRaw("group", "/api/group/admins/add", params);
+    }
+
+    /**
+     * Remove a deputy (admin) from a group.
+     */
+    public JsonNode removeDeputy(String groupId, String... memberIds) {
+        Objects.requireNonNull(groupId, "groupId must not be null");
+
+        Map<String, Object> params = new LinkedHashMap<>();
+        params.put("grid", groupId);
+        params.put("members", Arrays.asList(memberIds));
+        params.put("imei", context.getImei());
+
+        return encryptedGetRaw("group", "/api/group/admins/remove", params);
+    }
+
+    /**
+     * Update group settings.
+     */
+    public JsonNode updateSettings(String groupId, Map<String, Object> settings) {
+        Objects.requireNonNull(groupId, "groupId must not be null");
+
+        Map<String, Object> params = new LinkedHashMap<>(settings);
+        params.put("grid", groupId);
+        params.put("imei", context.getImei());
+
+        return encryptedGetRaw("group", "/api/group/setting/update", params);
+    }
+
+    /**
+     * Leave a group.
+     */
+    public JsonNode leave(String groupId) {
+        Objects.requireNonNull(groupId, "groupId must not be null");
+
+        Map<String, Object> params = new LinkedHashMap<>();
+        params.put("grids", List.of(groupId));
+        params.put("imei", context.getImei());
+        params.put("silent", 0);
+        params.put("language", context.getLanguage());
+
+        return encryptedPostRaw("group", "/api/group/leave", params);
+    }
+
+    /**
+     * Disperse (dissolve) a group.
+     */
+    public JsonNode disperse(String groupId) {
+        Objects.requireNonNull(groupId, "groupId must not be null");
+
+        Map<String, Object> params = new LinkedHashMap<>();
+        params.put("grid", groupId);
+        params.put("imei", context.getImei());
+
+        return encryptedPostRaw("group", "/api/group/disperse", params);
+    }
+
+    /**
+     * Get group chat history.
+     *
+     * @param groupId the group ID
+     * @param count   number of messages to fetch
+     */
+    public JsonNode getChatHistory(String groupId, int count) {
+        Objects.requireNonNull(groupId, "groupId must not be null");
+
+        Map<String, Object> params = new LinkedHashMap<>();
+        params.put("grid", groupId);
+        params.put("count", count);
+
+        return encryptedGetRaw("group", "/api/group/history", params);
+    }
+
+    /**
+     * Get group chat history (default 50 messages).
+     */
+    public JsonNode getChatHistory(String groupId) {
+        return getChatHistory(groupId, 50);
+    }
 }

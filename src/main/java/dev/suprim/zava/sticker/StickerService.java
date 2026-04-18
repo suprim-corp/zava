@@ -43,4 +43,16 @@ public class StickerService extends BaseService {
     public JsonNode search(String keyword) {
         return search(keyword, 50);
     }
+
+    /**
+     * Get detailed info for a sticker.
+     *
+     * @param stickerId the sticker ID
+     */
+    public JsonNode getDetail(int stickerId) {
+        Map<String, Object> params = new LinkedHashMap<>();
+        params.put("sid", stickerId);
+
+        return encryptedGetRaw("sticker", "/api/message/sticker/sticker_detail", params);
+    }
 }

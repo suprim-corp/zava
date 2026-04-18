@@ -132,4 +132,91 @@ public class UserService extends BaseService {
 
         return encryptedGetRaw("alias", "/api/alias/list", params);
     }
+
+    /**
+     * Find a user by username.
+     */
+    public JsonNode findUserByUsername(String username) {
+        return findUserByUsername(username, 240);
+    }
+
+    /**
+     * Find a user by username with avatar size.
+     */
+    public JsonNode findUserByUsername(String username, int avatarSize) {
+        Objects.requireNonNull(username, "username must not be null");
+
+        Map<String, Object> params = new LinkedHashMap<>();
+        params.put("user_name", username);
+        params.put("avatar_size", avatarSize);
+
+        return encryptedGetRaw("friend", "/api/friend/search/by-user-name", params);
+    }
+
+    /**
+     * Get user info for one or more user IDs.
+     */
+    public JsonNode getUserInfo(String... userIds) {
+        Objects.requireNonNull(userIds, "userIds must not be null");
+
+        Map<String, Integer> friendMap = new LinkedHashMap<>();
+        for (String id : userIds) friendMap.put(id, 0);
+
+        try {
+            Map<String, Object> params = new LinkedHashMap<>();
+            params.put("phonebook_version", 0);
+            params.put("friend_pversion_map", MAPPER.writeValueAsString(friendMap));
+            params.put("avatar_size", 240);
+            params.put("language", context.getLanguage());
+            params.put("show_online_status", 1);
+            params.put("imei", context.getImei());
+
+            return encryptedPostRaw("profile", "/api/social/friend/getprofiles/v2", params);
+        } catch (Exception e) {
+            throw new dev.suprim.zava.exception.ZavaException("Failed to get user info", e);
+        }
+    }
+
+    /**
+     * Send a friend request.
+     */
+    public JsonNode sendFriendRequest(String userId, String message) {
+        Objects.requireNonNull(userId, "userId must not be null");
+
+        Map<String, Object> params = new LinkedHashMap<>();
+        params.put("toid", userId);
+        params.put("msg", message != null ? message : "");
+        params.put("reqsrc", 30);
+        params.put("imei", context.getImei());
+        params.put("language", context.getLanguage());
+        params.put("srcParams", "");
+
+        return encryptedPostRaw("friend", "/api/friend/sendreq", params);
+    }
+
+    /**
+     * Accept a friend request.
+     */
+    public JsonNode acceptFriendRequest(String userId) {
+        Objects.requireNonNull(userId, "userId must not be null");
+
+        Map<String, Object> params = new LinkedHashMap<>();
+        params.put("fid", userId);
+        params.put("language", context.getLanguage());
+
+        return encryptedPostRaw("friend", "/api/friend/accept", params);
+    }
+
+    /**
+     * Remove a friend.
+     */
+    public JsonNode removeFriend(String userId) {
+        Objects.requireNonNull(userId, "userId must not be null");
+
+        Map<String, Object> params = new LinkedHashMap<>();
+        params.put("fid", userId);
+        params.put("imei", context.getImei());
+
+        return encryptedPostRaw("friend", "/api/friend/remove", params);
+    }
 }

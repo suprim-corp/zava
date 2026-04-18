@@ -6,8 +6,11 @@ import dev.suprim.zava.internal.http.HttpClient;
 import dev.suprim.zava.internal.http.ResponseHandler;
 import dev.suprim.zava.internal.session.Context;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 /**
- * Profile operations: fetch account info.
+ * Profile operations: account info, profile updates.
  */
 public class ProfileService extends BaseService {
 
@@ -15,10 +18,21 @@ public class ProfileService extends BaseService {
         super(context, http, responseHandler);
     }
 
-    /**
-     * Fetch the logged-in user's account info.
-     */
+    /** Fetch the logged-in user's account info. */
     public JsonNode fetchAccountInfo() {
         return simpleGetRaw("profile", "/api/social/profile/me-v2");
+    }
+
+    /**
+     * Update profile bio.
+     *
+     * @param bio the new bio text
+     */
+    public JsonNode updateBio(String bio) {
+        Map<String, Object> params = new LinkedHashMap<>();
+        params.put("sdesc", bio != null ? bio : "");
+        params.put("imei", context.getImei());
+
+        return encryptedPostRaw("profile", "/api/social/profile/update", params);
     }
 }

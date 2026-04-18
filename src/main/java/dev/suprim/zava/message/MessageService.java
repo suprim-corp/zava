@@ -356,4 +356,151 @@ public class MessageService {
         Response response = http.post(url, Map.of("params", encrypted));
         return responseHandler.handleRaw(response, true);
     }
+
+    // ── Typing / Seen / Delivered Events ─────────────────────────────────
+
+    /**
+     * Send a typing indicator.
+     *
+     * @param threadId the thread ID
+     * @param type     USER or GROUP
+     */
+    public JsonNode sendTypingEvent(String threadId, ThreadType type) {
+        Objects.requireNonNull(threadId, "threadId must not be null");
+
+        try {
+            Map<String, Object> params = new LinkedHashMap<>();
+            if (type == ThreadType.USER) {
+                params.put("toid", threadId);
+                params.put("destType", 3);
+            } else {
+                params.put("grid", threadId);
+                params.put("destType", 1);
+            }
+            params.put("imei", context.getImei());
+
+            String service = type == ThreadType.USER ? "chat" : "group";
+            String path = type == ThreadType.USER
+                    ? "/api/message/typing"
+                    : "/api/group/typing";
+            return doPostRaw(service, path, params);
+        } catch (ZavaException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ZavaException("Failed to send typing event", e);
+        }
+    }
+
+    /**
+     * Send seen receipt for messages.
+     *
+     * @param msgId     the global message ID
+     * @param cliMsgId  the client message ID
+     * @param senderId  the sender UID (for user) or null (for group)
+     * @param threadId  the thread ID (for group, this is the grid)
+     * @param type      USER or GROUP
+     */
+    public JsonNode sendSeenEvent(String msgId, String cliMsgId,
+                                  String senderId, String threadId, ThreadType type) {
+        Objects.requireNonNull(msgId, "msgId must not be null");
+
+        try {
+            Map<String, Object> msgInfo = new LinkedHashMap<>();
+            msgInfo.put("cliMsgId", cliMsgId != null ? cliMsgId : "0");
+            msgInfo.put("globalMsgId", msgId);
+            msgInfo.put("cliMsgType", 1);
+
+            Map<String, Object> params = new LinkedHashMap<>();
+            if (type == ThreadType.USER) {
+                msgInfo.put("senderId", senderId);
+                params.put("msgInfos", MAPPER.writeValueAsString(
+                        Map.of("data", List.of(msgInfo))));
+            } else {
+                params.put("msgInfos", MAPPER.writeValueAsString(
+                        Map.of("data", List.of(msgInfo), "grid", threadId)));
+            }
+            params.put("imei", context.getImei());
+
+            String service = type == ThreadType.USER ? "chat" : "group";
+            String path = type == ThreadType.USER
+                    ? "/api/message/seenv2"
+                    : "/api/group/seenv2";
+            return doPostRaw(service, path, params);
+        } catch (ZavaException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ZavaException("Failed to send seen event", e);
+        }
+    }
+
+    /**
+     * Send delivered receipt for messages.
+     */
+    public JsonNode sendDeliveredEvent(String msgId, String threadId, ThreadType type) {
+        Objects.requireNonNull(msgId, "msgId must not be null");
+
+        try {
+            Map<String, Object> msgInfo = new LinkedHashMap<>();
+            msgInfo.put("msgId", msgId);
+
+            Map<String, Object> params = new LinkedHashMap<>();
+            if (type == ThreadType.USER) {
+                params.put("msgInfos", MAPPER.writeValueAsString(
+                        Map.of("seen", 0, "data", List.of(msgInfo))));
+            } else {
+                params.put("msgInfos", MAPPER.writeValueAsString(
+                        Map.of("seen", 0, "data", List.of(msgInfo), "grid", threadId)));
+            }
+            params.put("imei", context.getImei());
+
+            String service = type == ThreadType.USER ? "chat" : "group";
+            String path = type == ThreadType.USER
+                    ? "/api/message/deliveredv2"
+                    : "/api/group/deliveredv2";
+            return doPostRaw(service, path, params);
+        } catch (ZavaException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ZavaException("Failed to send delivered event", e);
+        }
+    }
+
+    /**
+     * Send a sticker.
+     *
+     * @param stickerId the sticker ID
+     * @param cateId    the sticker category ID
+     * @param threadId  the thread ID
+     * @param type      USER or GROUP
+     */
+    public SendResult sendSticker(int stickerId, int cateId, String threadId, ThreadType type) {
+        Objects.requireNonNull(threadId, "threadId must not be null");
+
+        try {
+            Map<String, Object> params = new LinkedHashMap<>();
+            params.put("stickerId", stickerId);
+            params.put("cateId", cateId);
+            params.put("type", 7);
+            params.put("clientId", System.currentTimeMillis());
+            params.put("imei", context.getImei());
+            params.put("zsource", -1);
+
+            if (type == ThreadType.USER) {
+                params.put("toid", threadId);
+            } else {
+                params.put("grid", threadId);
+                params.put("visibility", 0);
+            }
+
+            String service = type == ThreadType.USER ? "chat" : "group";
+            String path = type == ThreadType.USER
+                    ? "/api/message/sticker"
+                    : "/api/group/sticker";
+            return doPost(service, path, params);
+        } catch (ZavaException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ZavaException("Failed to send sticker", e);
+        }
+    }
 }
