@@ -27,21 +27,22 @@
 Zava là Java SDK cho Zalo Web API, port từ [zca-js](https://github.com/RFS-ADRENO/zca-js).
 
 ```
-┌─────────────────────────────────────────────────┐
-│                  Consumer Code                   │
-├─────────────────────────────────────────────────┤
-│                    Zava.java                     │  Entry point: login(), loginQR()
-├──────────┬──────────┬──────────┬────────────────┤
-│ messages │  groups  │ friends  │  ...services   │  API Layer (domain services)
-├──────────┴──────────┴──────────┴────────────────┤
-│              ZavaHttpClient                      │  HTTP Layer (OkHttp wrapper)
-│              ZavaListener                        │  WebSocket Layer
-├─────────────────────────────────────────────────┤
-│              CryptoUtils                         │  Crypto Layer (AES-CBC, AES-GCM, MD5)
-├─────────────────────────────────────────────────┤
-│              ZavaContext                          │  Session state
-│              Models + Enums                      │  Data structures
-└─────────────────────────────────────────────────┘
++------------------------+--------------------------------------+
+|                         Consumer Code                         |
++------------------------+--------------------------------------+
+| Zava.java              | Entry point: login(), loginQR()      |
++------------------------+--------------------------------------+
+| messages | groups      |                                      |
+| friends  | ...services | API Layer (domain services)          |
++------------------------+--------------------------------------+
+| ZavaHttpClient         | HTTP Layer (OkHttp wrapper)          |
+| ZavaListener           | WebSocket Layer                      |
++------------------------+--------------------------------------+
+| CryptoUtils            | Crypto (AES-CBC, AES-GCM, MD5)       |
++------------------------+--------------------------------------+
+| ZavaContext            | Session state                        |
+| Models + Enums         | Data structures                      |
++------------------------+--------------------------------------+
 ```
 
 **Nguyên tắc thiết kế:**
