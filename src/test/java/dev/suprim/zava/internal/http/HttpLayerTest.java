@@ -229,4 +229,48 @@ class HttpLayerTest {
         JsonNode result = svc.testEncryptedGet(Map.of("x", "y"), JsonNode.class);
         assertEquals(99, result.path("val").asInt());
     }
+
+    // ── BaseService IOException paths ────────────────────────────────────
+
+    @Test @DisplayName("encryptedPostRaw throws ZavaException on connection error")
+    void encryptedPostRawIOError() throws Exception {
+        server.shutdown(); // force IOException
+        TestService svc = new TestService(context, http, handler);
+        assertThrows(ZavaException.class, () -> svc.testEncryptedPostRaw(Map.of("a", "b")));
+    }
+
+    @Test @DisplayName("encryptedGetRaw throws ZavaException on connection error")
+    void encryptedGetRawIOError() throws Exception {
+        server.shutdown();
+        TestService svc = new TestService(context, http, handler);
+        assertThrows(ZavaException.class, () -> svc.testEncryptedGetRaw(Map.of("a", "b")));
+    }
+
+    @Test @DisplayName("simpleGetRaw throws ZavaException on connection error")
+    void simpleGetRawIOError() throws Exception {
+        server.shutdown();
+        TestService svc = new TestService(context, http, handler);
+        assertThrows(ZavaException.class, () -> svc.testSimpleGetRaw());
+    }
+
+    @Test @DisplayName("simpleGetUnencrypted throws ZavaException on connection error")
+    void simpleGetUnencryptedIOError() throws Exception {
+        server.shutdown();
+        TestService svc = new TestService(context, http, handler);
+        assertThrows(ZavaException.class, () -> svc.testSimpleGetUnencrypted());
+    }
+
+    @Test @DisplayName("encryptedPost typed throws on connection error")
+    void encryptedPostTypedIOError() throws Exception {
+        server.shutdown();
+        TestService svc = new TestService(context, http, handler);
+        assertThrows(ZavaException.class, () -> svc.testEncryptedPost(Map.of("a", "b"), JsonNode.class));
+    }
+
+    @Test @DisplayName("encryptedGet typed throws on connection error")
+    void encryptedGetTypedIOError() throws Exception {
+        server.shutdown();
+        TestService svc = new TestService(context, http, handler);
+        assertThrows(ZavaException.class, () -> svc.testEncryptedGet(Map.of("a", "b"), JsonNode.class));
+    }
 }

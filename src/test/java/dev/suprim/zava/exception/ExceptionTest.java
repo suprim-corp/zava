@@ -52,6 +52,21 @@ class ExceptionTest {
         assertNotNull(e.getCause());
     }
 
+    @Test @DisplayName("ZavaAuthException with code")
+    void authExceptionCode() {
+        ZavaAuthException e = new ZavaAuthException("fail", 403);
+        assertEquals(403, e.getCode());
+    }
+
+    @Test @DisplayName("ZavaException with all args")
+    void zavaExceptionAllArgs() {
+        RuntimeException cause = new RuntimeException();
+        ZavaException e = new ZavaException("msg", 500, cause);
+        assertEquals("msg", e.getMessage());
+        assertEquals(500, e.getCode());
+        assertSame(cause, e.getCause());
+    }
+
     @Test @DisplayName("ZavaTimeoutException with message")
     void timeoutException() {
         ZavaTimeoutException e = new ZavaTimeoutException("timeout");

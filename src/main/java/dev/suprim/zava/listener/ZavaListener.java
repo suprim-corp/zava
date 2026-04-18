@@ -17,14 +17,12 @@ import okhttp3.OkHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 /**
  * Real-time event listener for Zalo WebSocket events.
- *
- * <p>Connects to the Zalo WebSocket, decodes incoming events,
- * and dispatches them to registered typed callbacks.
  *
  * <pre>{@code
  * client.listener()
@@ -46,22 +44,17 @@ public class ZavaListener {
     private final Connection connection;
     private final String uid;
 
-    // Typed event callbacks
-    private Consumer<UserMessage> userMessageCallback;
-    private Consumer<GroupMessage> groupMessageCallback;
-    private Consumer<ReactionEvent> reactionCallback;
-    private Consumer<UndoEvent> undoCallback;
-    private Consumer<TypingEvent> typingCallback;
-    private Consumer<GroupEvent> groupEventCallback;
-    private Consumer<FriendEvent> friendEventCallback;
-    private Consumer<SeenEvent> seenCallback;
-    private Consumer<DeliveredEvent> deliveredCallback;
-    private Consumer<JsonNode> uploadCompleteCallback;
-
-    // Lifecycle callbacks
-    private Runnable connectedCallback;
-    private BiConsumer<Integer, String> closedCallback;
-    private Consumer<Throwable> errorCallback;
+    private Optional<Consumer<UserMessage>> userMessageCallback = Optional.empty();
+    private Optional<Consumer<GroupMessage>> groupMessageCallback = Optional.empty();
+    private Optional<Consumer<ReactionEvent>> reactionCallback = Optional.empty();
+    private Optional<Consumer<UndoEvent>> undoCallback = Optional.empty();
+    private Optional<Consumer<TypingEvent>> typingCallback = Optional.empty();
+    private Optional<Consumer<GroupEvent>> groupEventCallback = Optional.empty();
+    private Optional<Consumer<FriendEvent>> friendEventCallback = Optional.empty();
+    private Optional<Consumer<SeenEvent>> seenCallback = Optional.empty();
+    private Optional<Consumer<DeliveredEvent>> deliveredCallback = Optional.empty();
+    private Optional<Consumer<JsonNode>> uploadCompleteCallback = Optional.empty();
+    private Optional<Consumer<Throwable>> errorCallback = Optional.empty();
 
     public ZavaListener(Context context, OkHttpClient httpClient) {
         this.context = context;
@@ -70,69 +63,27 @@ public class ZavaListener {
         connection.onFrame(this::dispatchFrame);
     }
 
-    // ── Typed callback registration ──────────────────────────────────────
+    // ── Callback registration ────────────────────────────────────────────
 
-    public ZavaListener onUserMessage(Consumer<UserMessage> callback) {
-        this.userMessageCallback = callback; return this;
-    }
+    public ZavaListener onUserMessage(Consumer<UserMessage> cb) { userMessageCallback = Optional.of(cb); return this; }
+    public ZavaListener onGroupMessage(Consumer<GroupMessage> cb) { groupMessageCallback = Optional.of(cb); return this; }
+    public ZavaListener onReaction(Consumer<ReactionEvent> cb) { reactionCallback = Optional.of(cb); return this; }
+    public ZavaListener onUndo(Consumer<UndoEvent> cb) { undoCallback = Optional.of(cb); return this; }
+    public ZavaListener onTyping(Consumer<TypingEvent> cb) { typingCallback = Optional.of(cb); return this; }
+    public ZavaListener onGroupEvent(Consumer<GroupEvent> cb) { groupEventCallback = Optional.of(cb); return this; }
+    public ZavaListener onFriendEvent(Consumer<FriendEvent> cb) { friendEventCallback = Optional.of(cb); return this; }
+    public ZavaListener onSeen(Consumer<SeenEvent> cb) { seenCallback = Optional.of(cb); return this; }
+    public ZavaListener onDelivered(Consumer<DeliveredEvent> cb) { deliveredCallback = Optional.of(cb); return this; }
+    public ZavaListener onUploadComplete(Consumer<JsonNode> cb) { uploadCompleteCallback = Optional.of(cb); return this; }
+    public ZavaListener onError(Consumer<Throwable> cb) { errorCallback = Optional.of(cb); connection.onError(cb); return this; }
 
-    public ZavaListener onGroupMessage(Consumer<GroupMessage> callback) {
-        this.groupMessageCallback = callback; return this;
-    }
-
-    public ZavaListener onReaction(Consumer<ReactionEvent> callback) {
-        this.reactionCallback = callback; return this;
-    }
-
-    public ZavaListener onUndo(Consumer<UndoEvent> callback) {
-        this.undoCallback = callback; return this;
-    }
-
-    public ZavaListener onTyping(Consumer<TypingEvent> callback) {
-        this.typingCallback = callback; return this;
-    }
-
-    public ZavaListener onGroupEvent(Consumer<GroupEvent> callback) {
-        this.groupEventCallback = callback; return this;
-    }
-
-    public ZavaListener onFriendEvent(Consumer<FriendEvent> callback) {
-        this.friendEventCallback = callback; return this;
-    }
-
-    public ZavaListener onSeen(Consumer<SeenEvent> callback) {
-        this.seenCallback = callback; return this;
-    }
-
-    public ZavaListener onDelivered(Consumer<DeliveredEvent> callback) {
-        this.deliveredCallback = callback; return this;
-    }
-
-    public ZavaListener onUploadComplete(Consumer<JsonNode> callback) {
-        this.uploadCompleteCallback = callback; return this;
-    }
-
-    public ZavaListener onConnected(Runnable callback) {
-        this.connectedCallback = callback;
-        connection.onConnected(callback); return this;
-    }
-
-    public ZavaListener onClosed(BiConsumer<Integer, String> callback) {
-        this.closedCallback = callback;
-        connection.onClosed(callback); return this;
-    }
-
-    public ZavaListener onError(Consumer<Throwable> callback) {
-        this.errorCallback = callback;
-        connection.onError(callback); return this;
-    }
+    public ZavaListener onConnected(Runnable cb) { connection.onConnected(cb); return this; }
+    public ZavaListener onClosed(BiConsumer<Integer, String> cb) { connection.onClosed(cb); return this; }
 
     // ── Lifecycle ────────────────────────────────────────────────────────
 
     public void start() { start(true); }
-
     public void start(boolean retryOnClose) { connection.connect(retryOnClose); }
-
     public void stop() { connection.disconnect(); }
 
     // ── Frame dispatch ───────────────────────────────────────────────────
@@ -144,7 +95,7 @@ public class ZavaListener {
         try {
             JsonNode parsed = MAPPER.readTree(frame.getPayload());
             JsonNode decoded = EventDecoder.decode(parsed, cipherKey);
-            JsonNode data = decoded.has("data") ? decoded.path("data") : decoded;
+            JsonNode data = unwrapData(decoded);
 
             switch (cmd) {
                 case 501: case 510: dispatchUserMessages(data); break;
@@ -158,7 +109,7 @@ public class ZavaListener {
             }
         } catch (Exception e) {
             log.error("Error dispatching frame cmd={}", cmd, e);
-            if (errorCallback != null) errorCallback.accept(e);
+            errorCallback.ifPresent(cb -> cb.accept(e));
         }
     }
 
@@ -169,19 +120,17 @@ public class ZavaListener {
         for (JsonNode msg : msgs) {
             JsonNode content = msg.path("content");
             if (content.isObject() && content.has("deleteMsg")) {
-                if (undoCallback != null) {
+                undoCallback.ifPresent(cb -> {
                     UndoEvent undo = MAPPER.convertValue(msg, UndoEvent.class);
                     undo.initialize(uid, false);
-                    if (!undo.isSelf() || context.getOptions().isSelfListen())
-                        undoCallback.accept(undo);
-                }
+                    if (!undo.isSelf() || context.getOptions().isSelfListen()) cb.accept(undo);
+                });
             } else {
-                if (userMessageCallback != null) {
+                userMessageCallback.ifPresent(cb -> {
                     UserMessage um = MAPPER.convertValue(msg, UserMessage.class);
                     um.initialize(uid);
-                    if (!um.isSelf() || context.getOptions().isSelfListen())
-                        userMessageCallback.accept(um);
-                }
+                    if (!um.isSelf() || context.getOptions().isSelfListen()) cb.accept(um);
+                });
             }
         }
     }
@@ -193,19 +142,17 @@ public class ZavaListener {
         for (JsonNode msg : msgs) {
             JsonNode content = msg.path("content");
             if (content.isObject() && content.has("deleteMsg")) {
-                if (undoCallback != null) {
+                undoCallback.ifPresent(cb -> {
                     UndoEvent undo = MAPPER.convertValue(msg, UndoEvent.class);
                     undo.initialize(uid, true);
-                    if (!undo.isSelf() || context.getOptions().isSelfListen())
-                        undoCallback.accept(undo);
-                }
+                    if (!undo.isSelf() || context.getOptions().isSelfListen()) cb.accept(undo);
+                });
             } else {
-                if (groupMessageCallback != null) {
+                groupMessageCallback.ifPresent(cb -> {
                     GroupMessage gm = MAPPER.convertValue(msg, GroupMessage.class);
                     gm.initialize(uid);
-                    if (!gm.isSelf() || context.getOptions().isSelfListen())
-                        groupMessageCallback.accept(gm);
-                }
+                    if (!gm.isSelf() || context.getOptions().isSelfListen()) cb.accept(gm);
+                });
             }
         }
     }
@@ -221,7 +168,7 @@ public class ZavaListener {
 
             switch (actType) {
                 case "file_done":
-                    if (uploadCompleteCallback != null) uploadCompleteCallback.accept(content);
+                    uploadCompleteCallback.ifPresent(cb -> cb.accept(content));
                     String fileId = content.path("fileId").asText(null);
                     if (fileId != null) {
                         Context.UploadCallback cb = context.getUploadCallbacks().remove(fileId);
@@ -233,34 +180,26 @@ public class ZavaListener {
 
                 case "group":
                     if ("join_reject".equals(act)) continue;
-                    if (groupEventCallback != null) {
-                        JsonNode eventData = content.path("data");
-                        if (eventData.isTextual()) {
-                            try { eventData = MAPPER.readTree(eventData.asText()); }
-                            catch (Exception ignored) {}
-                        }
+                    groupEventCallback.ifPresent(cb -> {
+                        JsonNode eventData = parseEventData(content);
                         String threadId = eventData.has("groupId")
                                 ? eventData.path("groupId").asText("")
                                 : eventData.path("group_id").asText("");
                         GroupEventType type = GroupEventType.fromAct(act);
                         boolean isSelf = isSelfGroupEvent(eventData, type);
-                        groupEventCallback.accept(new GroupEvent(type, act, eventData, threadId, isSelf));
-                    }
+                        cb.accept(new GroupEvent(type, act, eventData, threadId, isSelf));
+                    });
                     break;
 
                 case "fr":
                     if ("req".equals(act)) continue;
-                    if (friendEventCallback != null) {
-                        JsonNode eventData = content.path("data");
-                        if (eventData.isTextual()) {
-                            try { eventData = MAPPER.readTree(eventData.asText()); }
-                            catch (Exception ignored) {}
-                        }
+                    friendEventCallback.ifPresent(cb -> {
+                        JsonNode eventData = parseEventData(content);
                         FriendEventType type = FriendEventType.fromAct(act);
                         String threadId = extractFriendThreadId(eventData, type);
                         boolean isSelf = isSelfFriendEvent(eventData, type);
-                        friendEventCallback.accept(new FriendEvent(type, eventData, threadId, isSelf));
-                    }
+                        cb.accept(new FriendEvent(type, eventData, threadId, isSelf));
+                    });
                     break;
 
                 default:
@@ -274,24 +213,22 @@ public class ZavaListener {
         if (!actions.isArray()) return;
 
         for (JsonNode action : actions) {
-            if ("typing".equals(action.path("act_type").asText(""))) {
-                if (typingCallback != null) {
-                    try {
-                        String rawData = action.path("data").asText("{}");
-                        if (!rawData.startsWith("{")) rawData = "{" + rawData + "}";
-                        JsonNode typingData = MAPPER.readTree(rawData);
-                        TypingEvent te = MAPPER.convertValue(typingData, TypingEvent.class);
-                        typingCallback.accept(te);
-                    } catch (Exception e) {
-                        log.debug("Failed to parse typing event", e);
-                    }
+            if (!"typing".equals(action.path("act_type").asText(""))) continue;
+            typingCallback.ifPresent(cb -> {
+                try {
+                    String rawData = action.path("data").asText("{}");
+                    if (!rawData.startsWith("{")) rawData = "{" + rawData + "}";
+                    JsonNode typingData = MAPPER.readTree(rawData);
+                    cb.accept(MAPPER.convertValue(typingData, TypingEvent.class));
+                } catch (Exception e) {
+                    log.debug("Failed to parse typing event", e);
                 }
-            }
+            });
         }
     }
 
     private void dispatchReactions(JsonNode data, boolean isGroup) {
-        if (reactionCallback == null) return;
+        if (reactionCallback.isEmpty()) return;
 
         for (String field : new String[]{"reacts", "reactGroups"}) {
             JsonNode reacts = data.path(field);
@@ -301,35 +238,51 @@ public class ZavaListener {
                 ReactionEvent re = MAPPER.convertValue(react, ReactionEvent.class);
                 re.initialize(uid, group);
                 if (!re.isSelf() || context.getOptions().isSelfListen())
-                    reactionCallback.accept(re);
+                    reactionCallback.get().accept(re);
             }
         }
     }
 
     private void dispatchSeenDelivered(JsonNode data, boolean isGroup) {
         JsonNode deliveredMsgs = data.path("delivereds");
-        if (deliveredMsgs.isArray() && deliveredMsgs.size() > 0 && deliveredCallback != null) {
-            for (JsonNode d : deliveredMsgs) {
-                DeliveredEvent de = MAPPER.convertValue(d, DeliveredEvent.class);
-                de.initialize(uid, isGroup);
-                if (!de.isSelf() || context.getOptions().isSelfListen())
-                    deliveredCallback.accept(de);
-            }
+        if (deliveredMsgs.isArray() && deliveredMsgs.size() > 0) {
+            deliveredCallback.ifPresent(cb -> {
+                for (JsonNode d : deliveredMsgs) {
+                    DeliveredEvent de = MAPPER.convertValue(d, DeliveredEvent.class);
+                    de.initialize(uid, isGroup);
+                    if (!de.isSelf() || context.getOptions().isSelfListen()) cb.accept(de);
+                }
+            });
         }
 
         String seenField = isGroup ? "groupSeens" : "seens";
         JsonNode seenMsgs = data.path(seenField);
-        if (seenMsgs.isArray() && seenMsgs.size() > 0 && seenCallback != null) {
-            for (JsonNode s : seenMsgs) {
-                SeenEvent se = MAPPER.convertValue(s, SeenEvent.class);
-                se.initialize(uid, isGroup);
-                if (!se.isSelf() || context.getOptions().isSelfListen())
-                    seenCallback.accept(se);
-            }
+        if (seenMsgs.isArray() && seenMsgs.size() > 0) {
+            seenCallback.ifPresent(cb -> {
+                for (JsonNode s : seenMsgs) {
+                    SeenEvent se = MAPPER.convertValue(s, SeenEvent.class);
+                    se.initialize(uid, isGroup);
+                    if (!se.isSelf() || context.getOptions().isSelfListen()) cb.accept(se);
+                }
+            });
         }
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────
+
+    private static JsonNode unwrapData(JsonNode node) {
+        JsonNode data = node.path("data");
+        return data.isMissingNode() ? node : data;
+    }
+
+    private JsonNode parseEventData(JsonNode content) {
+        JsonNode eventData = content.path("data");
+        if (eventData.isTextual()) {
+            try { return MAPPER.readTree(eventData.asText()); }
+            catch (Exception ignored) { /* fall through */ }
+        }
+        return eventData;
+    }
 
     private boolean isSelfGroupEvent(JsonNode data, GroupEventType type) {
         switch (type) {

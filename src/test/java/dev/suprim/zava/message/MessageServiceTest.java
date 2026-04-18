@@ -261,4 +261,74 @@ class MessageServiceTest {
         messageService.send("@all", "g-1", ThreadType.GROUP, List.of(Mention.all(0, 4)));
         assertTrue(server.takeRequest().getPath().contains("/api/group/mention"));
     }
+
+    // ── Error paths ──────────────────────────────────────────────────────
+
+    @Test @DisplayName("send throws on connection error")
+    void sendConnectionError() throws Exception {
+        server.shutdown();
+        assertThrows(Exception.class, () ->
+                messageService.send("msg", "uid", ThreadType.USER));
+    }
+
+    @Test @DisplayName("delete throws on connection error")
+    void deleteConnectionError() throws Exception {
+        server.shutdown();
+        assertThrows(Exception.class, () ->
+                messageService.delete("m", null, "uid", "t", ThreadType.USER, true));
+    }
+
+    @Test @DisplayName("undo throws on connection error")
+    void undoConnectionError() throws Exception {
+        server.shutdown();
+        assertThrows(Exception.class, () ->
+                messageService.undo("m", null, "t", ThreadType.USER));
+    }
+
+    @Test @DisplayName("forward throws on connection error")
+    void forwardConnectionError() throws Exception {
+        server.shutdown();
+        assertThrows(Exception.class, () ->
+                messageService.forward("msg", List.of("t"), ThreadType.USER, "orig", 0));
+    }
+
+    @Test @DisplayName("sendTypingEvent throws on connection error")
+    void typingConnectionError() throws Exception {
+        server.shutdown();
+        assertThrows(Exception.class, () ->
+                messageService.sendTypingEvent("t", ThreadType.USER));
+    }
+
+    @Test @DisplayName("sendSeenEvent throws on connection error")
+    void seenConnectionError() throws Exception {
+        server.shutdown();
+        assertThrows(Exception.class, () ->
+                messageService.sendSeenEvent("m", "c", "s", "t", ThreadType.USER));
+    }
+
+    @Test @DisplayName("sendDeliveredEvent throws on connection error")
+    void deliveredConnectionError() throws Exception {
+        server.shutdown();
+        assertThrows(Exception.class, () ->
+                messageService.sendDeliveredEvent("m", "t", ThreadType.USER));
+    }
+
+    @Test @DisplayName("sendSticker throws on connection error")
+    void stickerConnectionError() throws Exception {
+        server.shutdown();
+        assertThrows(Exception.class, () ->
+                messageService.sendSticker(1, 1, "t", ThreadType.USER));
+    }
+
+    // ── Quote with attach ────────────────────────────────────────────────
+
+    @Test @DisplayName("user quote with attach and TTL")
+    void userQuoteWithAttachAndTtl() throws Exception {
+        enqueueSuccess(MAPPER.createObjectNode().put("msgId", 777));
+        Quote quote = Quote.builder()
+                .ownerId("o").globalMsgId("g").cliMsgId("c").ts(0)
+                .msg("m").attach("attach-data").ttl(30).build();
+        messageService.send("reply", "uid-1", ThreadType.USER, null, quote, 60);
+        assertTrue(server.takeRequest().getPath().contains("/api/message/quote"));
+    }
 }
