@@ -73,107 +73,158 @@ Chi tiết lý do chọn từng version: xem [ZCA-JS-REFERENCE.md#93-version-dec
 ## 3. Package Structure
 
 ```
-dev.suprim.zava/
+dev.suprim.zava
 │
-├── Zava.java                          // Entry point
-│   ├── login(Credentials) -> ZavaClient
-│   └── loginQR(QRLoginOptions, QRLoginCallback) -> ZavaClient
+│   # ── Public API ──────────────────────────────────────────────
 │
-├── ZavaClient.java                    // API facade, returned after login
-│   ├── messages() -> MessageApi
-│   ├── groups() -> GroupApi
-│   ├── friends() -> FriendApi
-│   ├── reactions() -> ReactionApi
-│   ├── stickers() -> StickerApi
-│   ├── polls() -> PollApi
-│   ├── profile() -> ProfileApi
-│   ├── conversations() -> ConversationApi
-│   ├── settings() -> SettingsApi
-│   ├── business() -> BusinessApi
-│   ├── listener() -> ZavaListener
-│   └── credentials() -> CredentialManager
+├── Zava.java                              # Entry point: login(), loginQR()
+├── ZavaClient.java                        # Facade returned after login
+├── ZavaOptions.java                       # SDK configuration (builder)
 │
-├── core/                              // Internal infrastructure
-│   ├── ZavaContext.java               // Session state (uid, secretKey, serviceMap, settings)
-│   ├── ZavaOptions.java               // SDK configuration
-│   ├── ZavaHttpClient.java            // OkHttp wrapper (headers, cookies, redirects)
-│   ├── ZavaCookieJar.java             // Cookie persistence
-│   ├── ZavaResponse.java              // Response<T> wrapper (data + error)
-│   ├── ResponseHandler.java           // Decrypt response, parse JSON, check errors
-│   ├── UrlBuilder.java                // Build API URLs with params + version
-│   └── CallbacksMap.java              // TTL-enabled map for upload callbacks
+│   # ── Authentication ──────────────────────────────────────────
 │
-├── crypto/                            // All encryption/hashing
-│   ├── CryptoUtils.java               // AES-CBC encrypt/decrypt (2 key formats)
-│   ├── GcmDecryptor.java              // AES-GCM decrypt (WebSocket events)
-│   ├── ParamsEncryptor.java           // Login-specific: zcid, encryptKey derivation
-│   ├── SignKeyUtils.java              // getSignKey(type, params) -> MD5
-│   └── HashUtils.java                 // MD5 (file checksum, PIN, UUID generation)
+├── auth/
+│   ├── Credentials.java                   # imei, cookies, userAgent (builder)
+│   ├── CredentialStore.java               # saveTo(Path) / loadFrom(Path)
+│   ├── CookieLogin.java                   # Cookie-based login flow
+│   ├── QRLogin.java                       # QR code multi-step login flow
+│   ├── QRLoginCallback.java               # Event interface (generated, scanned, declined)
+│   └── QRLoginOptions.java                # QR login configuration
 │
-├── api/                               // Public API surface (1 class per domain)
-│   ├── LoginApi.java                  // Cookie login + QR login
-│   ├── MessageApi.java                // send, forward, delete, undo
-│   ├── AttachmentApi.java             // Chunked file upload
-│   ├── EventApi.java                  // Typing, seen, delivered events
-│   ├── GroupApi.java                  // CRUD groups, members, settings
-│   ├── FriendApi.java                 // Find, request, block, alias
-│   ├── ReactionApi.java               // Add reaction
-│   ├── StickerApi.java                // Search, get, send stickers
-│   ├── PollApi.java                   // Create, vote, lock polls
-│   ├── BoardApi.java                  // Notes, boards
-│   ├── ReminderApi.java               // CRUD reminders
-│   ├── ProfileApi.java                // Update profile, avatar, bio
-│   ├── ConversationApi.java           // Delete, pin, mute, archive
-│   ├── SettingsApi.java               // Get/update settings, labels
-│   ├── BusinessApi.java               // Biz account, catalog, products
-│   ├── AutoReplyApi.java              // CRUD auto-reply rules
-│   └── QuickMessageApi.java           // CRUD quick messages
+│   # ── Internal infrastructure ─────────────────────────────────
 │
-├── listener/                          // WebSocket real-time events
-│   ├── ZavaListener.java              // WebSocket client (connect, ping, reconnect)
-│   ├── ZavaEventHandler.java          // Callback interface for events
-│   ├── WsFrame.java                   // 4-byte header + payload codec
-│   ├── WsCommand.java                 // Command type enum (501, 521, 601, ...)
-│   └── EventDecoder.java              // Decrypt/decompress event payloads
+├── internal/
+│   ├── crypto/
+│   │   ├── AesCbc.java                    # AES-CBC encrypt/decrypt (session + login variants)
+│   │   ├── AesGcm.java                    # AES-GCM decrypt (WebSocket events)
+│   │   ├── ParamsEncryptor.java           # Login-specific: zcid, key derivation
+│   │   ├── Signer.java                    # getSignKey(type, params) -> MD5
+│   │   └── Hashing.java                   # MD5, UUID generation, PIN encrypt
+│   │
+│   ├── http/
+│   │   ├── HttpClient.java               # OkHttp wrapper (headers, cookies, redirects)
+│   │   ├── CookieJar.java                # OkHttp CookieJar with persistence
+│   │   ├── ResponseHandler.java          # Decrypt + parse + error check pipeline
+│   │   └── Urls.java                     # URL builder (service map + params + version)
+│   │
+│   ├── ws/
+│   │   ├── Connection.java               # WebSocket lifecycle (connect, ping, reconnect)
+│   │   ├── Frame.java                    # 4-byte binary header codec
+│   │   ├── Command.java                  # cmd enum (501, 521, 601, 612, ...)
+│   │   └── EventDecoder.java             # 4-mode decrypt/decompress pipeline
+│   │
+│   └── session/
+│       ├── Context.java                   # Session state (uid, secretKey, serviceMap)
+│       ├── ServiceMap.java                # Service name -> endpoint URL[] mapping
+│       ├── Settings.java                  # ShareFile, Socket, Keepalive configs
+│       └── CallbackMap.java              # TTL-enabled Map for async upload callbacks
 │
-├── model/                             // Data models (immutable POJOs)
-│   ├── Message.java                   // UserMessage, GroupMessage
-│   ├── Group.java                     // GroupInfo, GroupSetting, GroupTopic
-│   ├── User.java                      // User, UserBasic
-│   ├── Reaction.java                  // Reaction data
-│   ├── GroupEvent.java                // 22 group event types
-│   ├── FriendEvent.java               // 13 friend event types
-│   ├── Undo.java                      // Message deletion
-│   ├── Typing.java                    // Typing indicators
-│   ├── SeenMessage.java               // Seen receipts
-│   ├── DeliveredMessage.java          // Delivery receipts
-│   ├── Attachment.java                // AttachmentSource (file path, bytes, stream)
-│   ├── MessageContent.java            // Rich message (text + styles + mentions + attachments)
-│   ├── Credentials.java               // Login credentials (imei, cookies, userAgent)
-│   ├── Poll.java                      // Poll data
-│   ├── Reminder.java                  // Reminder data
-│   ├── Sticker.java                   // Sticker data
-│   ├── Catalog.java                   // Catalog + product data
-│   ├── Label.java                     // Label data
-│   ├── QuickMessage.java              // Quick message template
-│   ├── AutoReply.java                 // Auto-reply config
-│   └── enums/                         // All enums
-│       ├── ThreadType.java            // USER, GROUP
-│       ├── Gender.java                // MALE, FEMALE
-│       ├── GroupType.java             // GROUP, COMMUNITY
-│       ├── GroupEventType.java        // 22 values
-│       ├── FriendEventType.java       // 13 values
-│       ├── TextStyle.java             // BOLD, ITALIC, colors, lists
-│       ├── Urgency.java               // DEFAULT, IMPORTANT, URGENT
-│       ├── Reactions.java             // 56 emoji codes
-│       └── ...
+│   # ── Domain modules ──────────────────────────────────────────
+│   # Mỗi module tự chứa: service + models + exceptions
 │
-└── exception/                         // Custom exceptions
-    ├── ZavaApiException.java          // Base (message + error code)
-    ├── ZavaLoginQRAbortedException.java
-    ├── ZavaLoginQRDeclinedException.java
-    └── ZavaCryptoException.java       // Encrypt/decrypt failures
+├── message/
+│   ├── MessageService.java                # send, forward, delete, undo
+│   ├── AttachmentService.java             # Chunked file upload
+│   ├── Message.java                       # UserMessage, GroupMessage
+│   ├── MessageContent.java               # Rich message (text + styles + mentions + attachments)
+│   ├── Attachment.java                    # fromFile(), fromBytes(), fromStream()
+│   ├── Quote.java                         # Quoted message reference
+│   ├── Mention.java                       # @mention in group messages
+│   ├── TextStyle.java                     # enum: BOLD, ITALIC, colors, lists
+│   └── Urgency.java                       # enum: DEFAULT, IMPORTANT, URGENT
+│
+├── conversation/
+│   ├── ConversationService.java           # delete, pin, mute, archive, history
+│   ├── Conversation.java                  # Conversation metadata
+│   └── ThreadType.java                    # enum: USER, GROUP
+│
+├── group/
+│   ├── GroupService.java                  # create, getInfo, addUser, settings, ...
+│   ├── Group.java                         # GroupInfo
+│   ├── GroupSetting.java                  # Permissions and config
+│   ├── GroupMember.java                   # Member info
+│   ├── GroupTopic.java                    # Pinned topics
+│   ├── GroupType.java                     # enum: GROUP, COMMUNITY
+│   ├── GroupEvent.java                    # Incoming group events
+│   └── GroupEventType.java                # enum: 22 types (JOIN, LEAVE, ...)
+│
+├── user/
+│   ├── UserService.java                   # find, getInfo, getAllFriends, block, alias
+│   ├── User.java                          # Full user profile
+│   ├── UserBasic.java                     # Lightweight user info
+│   ├── FriendRequest.java                 # Friend request data
+│   ├── FriendEvent.java                   # Incoming friend events
+│   ├── FriendEventType.java              # enum: 13 types (ADD, REMOVE, ...)
+│   └── Gender.java                        # enum: MALE, FEMALE
+│
+├── reaction/
+│   ├── ReactionService.java               # addReaction
+│   ├── Reaction.java                      # Reaction data
+│   └── ReactionType.java                  # enum: 56 emoji codes
+│
+├── sticker/
+│   ├── StickerService.java                # search, getDetail, send
+│   └── Sticker.java                       # Sticker data
+│
+├── poll/
+│   ├── PollService.java                   # create, vote, lock, share, getDetail
+│   └── Poll.java                          # Poll + options data
+│
+├── board/
+│   ├── BoardService.java                  # createNote, editNote, getListBoard
+│   ├── Board.java                         # Board data
+│   └── Note.java                          # Note data
+│
+├── reminder/
+│   ├── ReminderService.java               # CRUD + list
+│   ├── Reminder.java                      # Reminder data
+│   └── RepeatMode.java                    # enum: NONE, DAILY, WEEKLY, MONTHLY
+│
+├── profile/
+│   ├── ProfileService.java                # updateProfile, updateBio, changeAvatar
+│   └── Profile.java                       # Profile data
+│
+├── settings/
+│   ├── SettingsService.java               # get/update settings, labels
+│   ├── AppSettings.java                   # App settings
+│   └── Label.java                         # Label data
+│
+├── business/
+│   ├── BusinessService.java               # Biz account, catalog CRUD, product CRUD
+│   ├── BizAccount.java                    # Business account info
+│   ├── Catalog.java                       # Catalog data
+│   ├── Product.java                       # Product data
+│   ├── AutoReply.java                     # Auto-reply config
+│   └── QuickMessage.java                  # Quick message template
+│
+│   # ── Listener (real-time events) ─────────────────────────────
+│
+├── listener/
+│   ├── ZavaListener.java                  # Public: start(), stop(), onMessage(), ...
+│   ├── EventHandler.java                  # Callback interface
+│   ├── Typing.java                        # Typing indicator model
+│   ├── SeenMessage.java                   # Seen receipt model
+│   └── DeliveredMessage.java              # Delivery receipt model
+│
+│   # ── Exceptions ──────────────────────────────────────────────
+│
+└── exception/
+    ├── ZavaException.java                 # Base unchecked exception (message + code)
+    ├── ZavaCryptoException.java           # Encrypt/decrypt failures
+    ├── ZavaAuthException.java             # Login failures
+    └── ZavaTimeoutException.java          # Request/WS timeout
 ```
+
+**Nguyên tắc tổ chức:**
+
+- **Package-by-feature, không package-by-layer.** Mỗi domain (`message/`, `group/`, `user/`, ...)
+  tự chứa service + model + enum của nó. Khi cần thêm field cho `Group`, không phải
+  nhảy sang `model/` rồi quay lại `api/`.
+- **`internal/`** là implementation details, không phải public API.
+  Consumer chỉ thấy top-level classes + domain packages.
+- **Flat domain packages.** Mỗi domain package nhỏ (3-8 files), không cần sub-package.
+  Nếu sau này phình ra thì refactor.
+- **Exception riêng package** vì được dùng cross-domain.
 
 ---
 
@@ -205,57 +256,64 @@ public class Zava {
 
 ### 4.2 ZavaClient (API Facade)
 
-Returned sau khi login thành công. Giữ session state và expose tất cả API services.
+Returned sau khi login thành công. Giữ session state và expose domain services.
 
 ```java
 public class ZavaClient {
 
-    private final ZavaContext context;
+    private final Context context;
 
-    // Lazy-initialized, thread-safe service instances
-    public MessageApi messages() { ... }
-    public GroupApi groups() { ... }
-    public FriendApi friends() { ... }
-    public ReactionApi reactions() { ... }
+    // Lazy-initialized, thread-safe
+    public MessageService messages() { ... }
+    public GroupService groups() { ... }
+    public UserService users() { ... }
+    public ReactionService reactions() { ... }
+    public ConversationService conversations() { ... }
+    public PollService polls() { ... }
+    public StickerService stickers() { ... }
+    public ProfileService profile() { ... }
+    public SettingsService settings() { ... }
+    public BusinessService business() { ... }
     public ZavaListener listener() { ... }
-    public CredentialManager credentials() { ... }
-    // ... other services
+    public CredentialStore credentials() { ... }
 }
 ```
 
-**Tại sao tách thành services thay vì 1 class?**
+**Tại sao package-by-feature?**
 
-zca-js có 1 class `API` với 145+ methods. Trong Java đó sẽ là một class khổng lồ,
-khó navigate, khó test. Tách theo domain cho phép:
-- IDE autocomplete hữu ích hơn (`client.groups().` chỉ show group methods)
-- Test từng service riêng
-- Lazy init (chỉ tạo service khi dùng)
+| | Package-by-layer (cũ) | Package-by-feature (mới) |
+|---|---|---|
+| Thêm field cho Group | Sửa `model/Group.java` + `api/GroupApi.java` | Sửa trong `group/` |
+| Tìm mọi thứ về reactions | Tìm trong `api/` + `model/` + `enums/` | Mở `reaction/` |
+| Delete 1 feature | Xóa scattered files | Xóa 1 package |
+| IDE navigation | Scroll qua 20+ files trong `model/` | 3-8 files per package |
 
-### 4.3 ZavaContext (Session State)
+### 4.3 Context (Session State)
 
 Shared state giữa tất cả components. Immutable sau khi login xong.
+Nằm trong `internal/session/` - consumer không truy cập trực tiếp.
 
 ```java
-public class ZavaContext {
+// dev.suprim.zava.internal.session
+public class Context {
 
-    private final String uid;                    // User ID
-    private final String imei;                   // Device ID
-    private final String secretKey;              // AES key (Base64) cho session encrypt/decrypt
+    private final String uid;
+    private final String imei;
+    private final String secretKey;              // AES key (Base64)
     private final String userAgent;
     private final String language;               // Default "vi"
-    private final ZavaCookieJar cookieJar;
-    private final Map<String, List<String>> serviceMap;  // service name -> endpoint URLs
-    private final Settings settings;             // shareFile, socket, keepalive configs
+    private final CookieJar cookieJar;
+    private final ServiceMap serviceMap;
+    private final Settings settings;
     private final ZavaOptions options;
-
-    // Thread-safe upload callback map
-    private final CallbacksMap uploadCallbacks;
+    private final CallbackMap uploadCallbacks;   // TTL-enabled, thread-safe
 }
 ```
 
 ### 4.4 ZavaOptions (Configuration)
 
 ```java
+// dev.suprim.zava
 public class ZavaOptions {
 
     private final boolean selfListen;            // Default false
@@ -273,34 +331,30 @@ public class ZavaOptions {
 
 Đây là phần critical nhất. 5 hàm encrypt/decrypt khác nhau, dùng key format khác nhau.
 
-### 5.1 CryptoUtils
+### 5.1 AesCbc
 
 ```java
-public final class CryptoUtils {
+// dev.suprim.zava.internal.crypto
+public final class AesCbc {
 
     // --- Session encrypt/decrypt (dùng cho mọi API call sau login) ---
 
     /** Encrypt params. Key = Base64.decode(secretKey), IV = zero, AES-CBC, output Base64 */
     public static String encodeAES(String secretKey, String data);
 
-    /** Decrypt response. Key = Base64.decode(secretKey), IV = zero, AES-CBC */
     public static String decodeAES(String secretKey, String data);
 
     // --- Login encrypt/decrypt (key format khác!) ---
 
-    /** Decrypt login response. Key = UTF-8 bytes, IV = zero, AES-CBC */
     public static String decryptResp(String key, String data);
 }
 ```
 
-**Sự khác biệt quan trọng:**
-- Session: `new SecretKeySpec(Base64.getDecoder().decode(secretKey), "AES")`
-- Login: `new SecretKeySpec(key.getBytes(StandardCharsets.UTF_8), "AES")`
-
-### 5.2 GcmDecryptor
+### 5.2 AesGcm
 
 ```java
-public final class GcmDecryptor {
+// dev.suprim.zava.internal.crypto
+public final class AesGcm {
 
     /**
      * Decrypt WebSocket event payload.
@@ -331,10 +385,11 @@ public class ParamsEncryptor {
 }
 ```
 
-### 5.4 SignKeyUtils
+### 5.4 Signer
 
 ```java
-public final class SignKeyUtils {
+// dev.suprim.zava.internal.crypto
+public final class Signer {
 
     /**
      * MD5("zsecure" + type + sorted_param_values)
@@ -343,10 +398,11 @@ public final class SignKeyUtils {
 }
 ```
 
-### 5.5 HashUtils
+### 5.5 Hashing
 
 ```java
-public final class HashUtils {
+// dev.suprim.zava.internal.crypto
+public final class Hashing {
 
     public static String md5(String input);
     public static String md5Chunked(Path file);              // 2MB chunks
@@ -359,12 +415,13 @@ public final class HashUtils {
 
 ## 6. HTTP Layer
 
-### 6.1 ZavaHttpClient
+### 6.1 HttpClient
 
 Wrapper trên OkHttp. Tất cả API calls đi qua đây.
 
 ```java
-public class ZavaHttpClient {
+// dev.suprim.zava.internal.http
+public class HttpClient {
 
     private final OkHttpClient client;
     private final ZavaContext context;
@@ -434,7 +491,7 @@ public class ZavaListener extends WebSocketListener {
 
     private WebSocket ws;
     private String cipherKey;          // Received on connect (cmd=1)
-    private final List<ZavaEventHandler> handlers;
+    private final List<EventHandler> handlers;
 
     /** Connect, start ping, begin receiving events */
     public void start();
@@ -444,7 +501,7 @@ public class ZavaListener extends WebSocketListener {
     public void stop();
 
     /** Register event handler */
-    public ZavaListener addHandler(ZavaEventHandler handler);
+    public ZavaListener addHandler(EventHandler handler);
 
     /** Builder-style convenience */
     public ZavaListener onMessage(Consumer<Message> handler);
@@ -514,68 +571,68 @@ public class EventDecoder {
 
 ## 8. API Layer
 
-Mỗi API service follow cùng pattern:
+Mỗi domain service follow cùng pattern:
 
 ```java
-public class SomeApi {
+// dev.suprim.zava.reaction
+public class ReactionService {
 
-    private final ZavaContext context;
-    private final ZavaHttpClient http;
+    private final Context context;
+    private final HttpClient http;
     private final ResponseHandler responseHandler;
 
-    SomeApi(ZavaContext context, ZavaHttpClient http, ResponseHandler responseHandler) {
+    ReactionService(Context context, HttpClient http, ResponseHandler responseHandler) {
         this.context = context;
         this.http = http;
         this.responseHandler = responseHandler;
     }
 
-    public SomeResponse doSomething(String param) {
+    public Reaction addReaction(ReactionType icon, String msgId, String threadId) {
         // 1. Validate
-        Objects.requireNonNull(param, "param must not be null");
+        Objects.requireNonNull(icon, "icon must not be null");
 
         // 2. Build params
         Map<String, Object> params = Map.of(
-            "param", param,
+            "rIcon", icon.getCode(),
+            "msgId", msgId,
+            "threadId", threadId,
             "imei", context.getImei()
         );
 
         // 3. Encrypt
-        String encrypted = CryptoUtils.encodeAES(
+        String encrypted = AesCbc.encode(
             context.getSecretKey(),
             objectMapper.writeValueAsString(params)
         );
 
         // 4. HTTP request
         Response response = http.get(
-            UrlBuilder.build(context.getServiceUrl("chat"), encrypted)
+            Urls.build(context.getServiceUrl("reaction"), encrypted)
         );
 
         // 5. Decrypt + parse response
-        return responseHandler.handle(response, SomeResponse.class);
+        return responseHandler.handle(response, Reaction.class);
     }
 }
 ```
 
-### API Service Catalog
+### Service Catalog
 
-| Service | Methods | Zalo Service |
-|---------|---------|-------------|
-| `MessageApi` | send, forward, delete, undo | chat, file |
-| `AttachmentApi` | upload (chunked) | file |
-| `EventApi` | sendTyping, sendSeen, sendDelivered | chat |
-| `GroupApi` | create, getInfo, addUser, removeUser, changeSettings, ... (~30) | group |
-| `FriendApi` | find, getUserInfo, getAllFriends, sendRequest, block, alias (~20) | friend |
-| `ReactionApi` | addReaction | reaction |
-| `StickerApi` | search, getDetail, send | sticker |
-| `PollApi` | create, vote, lock, share, getDetail | group_poll |
-| `BoardApi` | createNote, editNote, getListBoard | boards, group_board |
-| `ReminderApi` | create, edit, remove, getList | todoUrl |
-| `ProfileApi` | updateProfile, updateBio, changeAvatar | profile |
-| `ConversationApi` | delete, pin, mute, archive | conversation |
-| `SettingsApi` | getSettings, updateSettings, labels | settings, label |
-| `BusinessApi` | getBizAccount, catalog CRUD, product CRUD | catalog |
-| `AutoReplyApi` | CRUD | auto_reply |
-| `QuickMessageApi` | CRUD | quick_message |
+| Package | Service | Methods | Zalo Endpoint |
+|---------|---------|---------|---------------|
+| `message` | `MessageService` | send, forward, delete, undo | chat, file |
+| `message` | `AttachmentService` | upload (chunked) | file |
+| `conversation` | `ConversationService` | delete, pin, mute, archive, typing, seen | conversation, chat |
+| `group` | `GroupService` | create, getInfo, addUser, settings, ... (~30) | group |
+| `user` | `UserService` | find, getInfo, getAllFriends, block, alias (~20) | friend |
+| `reaction` | `ReactionService` | addReaction | reaction |
+| `sticker` | `StickerService` | search, getDetail, send | sticker |
+| `poll` | `PollService` | create, vote, lock, share, getDetail | group_poll |
+| `board` | `BoardService` | createNote, editNote, getListBoard | boards, group_board |
+| `reminder` | `ReminderService` | create, edit, remove, getList | todoUrl |
+| `profile` | `ProfileService` | updateProfile, updateBio, changeAvatar | profile |
+| `settings` | `SettingsService` | getSettings, updateSettings, labels | settings, label |
+| `business` | `BusinessService` | getBizAccount, catalog CRUD, auto-reply, quick msg | catalog, auto_reply, quick_message |
 
 ---
 
@@ -639,16 +696,16 @@ public class Credentials {
 
 ```
 RuntimeException
-└── ZavaApiException                    // Base: message + error code
-    ├── ZavaLoginQRAbortedException     // QR login aborted
-    ├── ZavaLoginQRDeclinedException    // QR login declined by user
-    └── ZavaCryptoException             // Encrypt/decrypt failure
+└── ZavaException                       // Base: message + error code
+    ├── ZavaCryptoException             // Encrypt/decrypt failure
+    ├── ZavaAuthException               // Login failures (cookie/QR)
+    └── ZavaTimeoutException            // Request/WS timeout
 ```
 
 Tất cả exceptions là **unchecked** (extends RuntimeException):
 - Consumer không bị bắt buộc try-catch mọi API call
 - Consistent với các SDK hiện đại (OkHttp, Retrofit)
-- Error code từ Zalo server được giữ nguyên trong `ZavaApiException.getCode()`
+- Error code từ Zalo server được giữ nguyên trong `ZavaException.getCode()`
 
 ---
 
@@ -662,12 +719,14 @@ Tất cả exceptions là **unchecked** (extends RuntimeException):
 - Hầu hết use case (chatbot) không cần high throughput
 - Nếu cần async, consumer wrap trong `CompletableFuture.supplyAsync()`
 
-### Domain services thay vì 1 API class
+### Package-by-feature thay vì package-by-layer
 
 **Lý do:**
-- zca-js có 145+ methods trong 1 class `API` - trong Java đó sẽ là nightmare
-- Mỗi service class nhỏ, focused, dễ test
-- IDE autocomplete hữu ích hơn
+- zca-js có 145+ methods trong 1 class `API` - flat structure, mọi thứ dump vào 1 chỗ
+- Package-by-layer (`api/`, `model/`, `exception/`) vẫn là JS mindset trong Java clothing
+- Package-by-feature: mỗi domain tự chứa service + model + enum, cohesion cao
+- Xóa/thêm feature = xóa/thêm 1 package, không sờ vào nhiều nơi
+- IDE navigation: mở `group/` thấy ngay tất cả liên quan đến groups
 
 ### OkHttp 4.12.0 thay vì 5.x
 
@@ -713,4 +772,4 @@ Upload callback TTL:   5 minutes
 MD5 chunk size:        2MB (2097152 bytes)
 ```
 
-Tất cả nằm trong `dev.suprim.zava.core.Constants.java`.
+Tất cả nằm trong `dev.suprim.zava.internal.session.Constants.java`.
