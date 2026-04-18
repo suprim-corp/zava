@@ -1,6 +1,6 @@
 # Zava
 
-Unofficial Zalo Web API SDK for Java.
+Unofficial Java SDK for Zalo Web API.
 
 Port of [zca-js](https://github.com/RFS-ADRENO/zca-js) to Java.
 
@@ -33,8 +33,8 @@ API chưa ổn định. Đây là hướng thiết kế dự kiến:
 
 ```java
 // Login bằng cookie
-Zalo zalo = new Zalo();
-ZaloClient client = zalo.login(Credentials.builder()
+Zava zava = new Zava();
+ZavaClient client = zava.login(Credentials.builder()
     .imei("device-id")
     .cookies(cookieList)
     .userAgent("Mozilla/5.0 ...")
@@ -64,7 +64,7 @@ client.credentials().saveTo(Path.of("session.json"));
 
 // Khôi phục session
 Credentials saved = Credentials.loadFrom(Path.of("session.json"));
-ZaloClient client = zalo.login(saved);
+ZavaClient client = zava.login(saved);
 ```
 
 ## Dependencies

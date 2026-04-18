@@ -29,8 +29,8 @@
 
 ## Phase 2 - Context & Models
 
-- [ ] `ZaloContext` - session state (uid, imei, cookie, secretKey, serviceMap, settings)
-- [ ] `ZaloOptions` - configuration (selfListen, logging, proxy, apiType, apiVersion)
+- [ ] `ZavaContext` - session state (uid, imei, cookie, secretKey, serviceMap, settings)
+- [ ] `ZavaOptions` - configuration (selfListen, logging, proxy, apiType, apiVersion)
 - [ ] `CallbacksMap` - TTL-enabled map cho upload callbacks
 - [ ] Core enums: `ThreadType`, `Gender`, `AvatarSize`, `GroupType`, ...
 - [ ] Message models: `UserMessage`, `GroupMessage`, `TMessage`, `TAttachmentContent`
@@ -43,9 +43,9 @@
 
 ## Phase 3 - HTTP Client & Response Handling
 
-- [ ] `ZaloHttpClient` - wrapper trên OkHttp (default headers, cookie management, redirect handling)
-- [ ] `ZaloCookieJar` - OkHttp CookieJar implementation với persistence support
-- [ ] `ZaloResponse<T>` - response wrapper (data + error)
+- [ ] `ZavaHttpClient` - wrapper trên OkHttp (default headers, cookie management, redirect handling)
+- [ ] `ZavaCookieJar` - OkHttp CookieJar implementation với persistence support
+- [ ] `ZavaResponse<T>` - response wrapper (data + error)
 - [ ] `ResponseHandler` - decrypt response (AES-CBC), parse JSON, error checking
 - [ ] URL builder utility (`makeURL` equivalent)
 
@@ -57,7 +57,7 @@
 
 - [ ] `LoginApi.login()` - encrypt params, call getLoginInfo, decrypt response
 - [ ] `LoginApi.getServerInfo()` - fetch settings, service map, WebSocket URLs
-- [ ] `Zalo.login(credentials)` - orchestrator (parse cookies -> login -> getServerInfo -> return client)
+- [ ] `Zava.login(credentials)` - orchestrator (parse cookies -> login -> getServerInfo -> return client)
 - [ ] `Credentials` class - imei, cookies, userAgent
 - [ ] Credential persistence: `saveTo(Path)` / `loadFrom(Path)`
 - [ ] **Integration test** với real credentials (manual, không chạy trong CI)
@@ -80,13 +80,13 @@
 
 ## Phase 6 - WebSocket Listener
 
-- [ ] `ZaloListener` - OkHttp WebSocketListener implementation
+- [ ] `ZavaListener` - OkHttp WebSocketListener implementation
 - [ ] Binary frame codec: 4-byte header (version + cmd LE + subCmd) + JSON payload
 - [ ] Event decoder: 4 decrypt modes (plain, zlib, AES-GCM+zlib, AES-GCM)
 - [ ] Cipher key exchange (cmd=1, subCmd=1)
 - [ ] Ping/keepalive (cmd=2, subCmd=1, configurable interval)
 - [ ] Message dispatch: cmd -> event type -> listener callback
-- [ ] `ZaloEventHandler` interface:
+- [ ] `ZavaEventHandler` interface:
   - `onMessage(Message)`
   - `onReaction(Reaction)`
   - `onUndo(Undo)`

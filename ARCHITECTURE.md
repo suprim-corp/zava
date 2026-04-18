@@ -10,7 +10,7 @@
 1. [Overview](#1-overview)
 2. [Project Structure](#2-project-structure)
 3. [Core Modules](#3-core-modules)
-   - 3.1 [Zalo (Entry Point)](#31-zalo-entry-point---srczcalots)
+   - 3.1 [Zava (Entry Point)](#31-zava-entry-point---srczcalots)
    - 3.2 [Context (Session State)](#32-context-session-state---srccontextts)
    - 3.3 [Utils (Crypto/HTTP Core)](#33-utils-cryptohttp-core---srcutilsts)
    - 3.4 [API (Aggregator)](#34-api-aggregator---srcapists)
@@ -47,7 +47,7 @@
 zca-js/
 ├── src/
 │   ├── index.ts              # Re-exports everything
-│   ├── zalo.ts               # Zalo class - entry point, login orchestrator
+│   ├── zalo.ts               # Zalo class - entry point (maps to Zava.java)
 │   ├── apis.ts               # API class - aggregates 145+ API methods
 │   ├── context.ts            # Session types, CallbacksMap, factory
 │   ├── utils.ts              # Encryption, HTTP, crypto, apiFactory
@@ -103,12 +103,12 @@ zca-js/
 
 ## 3. Core Modules
 
-### 3.1 Zalo (Entry Point) - `src/zalo.ts`
+### 3.1 Zava (Entry Point) - `src/zalo.ts`
 
-**Class `Zalo`**: Entry point. Constructor nhận `Partial<Options>`.
+**Class `Zalo`** (trong zca-js, maps to `Zava` trong Java): Entry point. Constructor nhận `Partial<Options>`.
 
 ```
-Zalo
+Zava (Zalo in zca-js)
 ├── enableEncryptParam: boolean = true        // luôn true
 ├── options: Partial<Options>
 │
@@ -1401,16 +1401,16 @@ Mỗi event có field `encrypt`:
 
 ```
 com.zava/
-├── Zalo.java                    // Entry point (login methods)
-├── ZaloApi.java                 // API facade (or split into service classes)
-├── ZaloListener.java            // WebSocket listener (EventEmitter -> Observer/Listener pattern)
+├── Zava.java                    // Entry point (login methods)
+├── ZavaApi.java                 // API facade (or split into service classes)
+├── ZavaListener.java            // WebSocket listener (EventEmitter -> Observer/Listener pattern)
 │
 ├── core/
 │   ├── Context.java             // Session state
 │   ├── CryptoUtils.java         // AES-CBC, AES-GCM, MD5, ParamsEncryptor
 │   ├── HttpClient.java          // HTTP client wrapper (OkHttp)
 │   ├── ApiFactory.java          // Base class for API methods
-│   └── ZaloResponse.java        // Response wrapper
+│   └── ZavaResponse.java        // Response wrapper
 │
 ├── api/                         // One class per API domain
 │   ├── MessageApi.java          // sendMessage, forwardMessage, deleteMessage, undo
@@ -1437,9 +1437,9 @@ com.zava/
 │   └── enums/                   // All enums
 │
 ├── exception/                   // Custom exceptions
-│   ├── ZaloApiException.java
-│   ├── ZaloLoginQRAbortedException.java
-│   └── ZaloLoginQRDeclinedException.java
+│   ├── ZavaApiException.java
+│   ├── ZavaLoginQRAbortedException.java
+│   └── ZavaLoginQRDeclinedException.java
 │
 └── protocol/                    // Wire protocol
     ├── WsFrame.java             // 4-byte header + payload
@@ -1466,7 +1466,7 @@ com.zava/
 
 6. **EventEmitter -> Java**: Use typed listener interface pattern:
    ```java
-   public interface ZaloEventListener {
+   public interface ZavaEventListener {
      void onMessage(Message message);
      void onReaction(Reaction reaction);
      void onGroupEvent(GroupEvent event);
@@ -1495,7 +1495,7 @@ com.zava/
 1. `CryptoUtils` -- foundation, must be tested thoroughly with known inputs
 2. `Context` + Models -- data structures
 3. `LoginApi` (cookie login) -- verify crypto chain works end-to-end
-4. `ZaloListener` -- WebSocket + event decode
+4. `ZavaListener` -- WebSocket + event decode
 5. `MessageApi.sendMessage` -- end-to-end verification
 6. Remaining ~140 APIs -- all follow the same pattern, could be code-generated
 
