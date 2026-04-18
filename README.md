@@ -79,8 +79,9 @@ Tất cả crypto (AES-CBC, AES-GCM, MD5) sử dụng `javax.crypto` và `java.s
 
 ## Documentation
 
-- [ARCHITECTURE.md](ARCHITECTURE.md) - Phân tích chi tiết kiến trúc zca-js và mapping sang Java
+- [ARCHITECTURE.md](ARCHITECTURE.md) - Kiến trúc Zava SDK
 - [ROADMAP.md](ROADMAP.md) - Thứ tự triển khai (15 phases)
+- [ZCA-JS-REFERENCE.md](ZCA-JS-REFERENCE.md) - Phân tích chi tiết codebase gốc zca-js
 
 ## Rate Limiting
 
