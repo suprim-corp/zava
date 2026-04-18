@@ -23,6 +23,13 @@ public final class Constants {
     /** uidFrom == "0" means message is from the logged-in user. */
     public static final String SELF_UID = "0";
 
+    /** Max messages per send/seen/delivered batch. */
+    public static final int MAX_MESSAGES_PER_SEND = 50;
+
+    /** Default user agent for QR login when none is provided. */
+    public static final String DEFAULT_USER_AGENT =
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:133.0) Gecko/20100101 Firefox/133.0";
+
     public static final int QR_EXPIRY_SECONDS = 100;
     public static final long UPLOAD_CALLBACK_TTL_MS = 5 * 60 * 1000L;
     public static final int MD5_CHUNK_SIZE = 2 * 1024 * 1024;
