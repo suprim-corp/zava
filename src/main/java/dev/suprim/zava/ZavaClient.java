@@ -1,9 +1,10 @@
 package dev.suprim.zava;
 
-import dev.suprim.zava.auth.Credentials;
 import dev.suprim.zava.internal.http.HttpClient;
 import dev.suprim.zava.internal.http.ResponseHandler;
 import dev.suprim.zava.internal.session.Context;
+import dev.suprim.zava.listener.ZavaListener;
+import dev.suprim.zava.message.MessageService;
 
 /**
  * The main client returned after a successful login.
@@ -22,6 +23,10 @@ public class ZavaClient {
     private final HttpClient httpClient;
     private final ResponseHandler responseHandler;
 
+    // Lazy-initialized services
+    private volatile MessageService messageService;
+    private volatile ZavaListener listener;
+
     ZavaClient(Context context) {
         this.context = context;
         this.httpClient = new HttpClient(context);
@@ -33,6 +38,40 @@ public class ZavaClient {
      */
     public String getUid() {
         return context.getUid();
+    }
+
+    /**
+     * Message operations: send, delete, undo, forward.
+     */
+    public MessageService messages() {
+        if (messageService == null) {
+            synchronized (this) {
+                if (messageService == null) {
+                    messageService = new MessageService(context, httpClient, responseHandler);
+                }
+            }
+        }
+        return messageService;
+    }
+
+    /**
+     * Real-time event listener.
+     *
+     * <pre>{@code
+     * client.listener()
+     *     .onMessage(msg -> System.out.println(msg))
+     *     .start();
+     * }</pre>
+     */
+    public ZavaListener listener() {
+        if (listener == null) {
+            synchronized (this) {
+                if (listener == null) {
+                    listener = new ZavaListener(context, httpClient.getOkHttpClient());
+                }
+            }
+        }
+        return listener;
     }
 
     /**
@@ -56,11 +95,9 @@ public class ZavaClient {
         return responseHandler;
     }
 
-    // Domain services will be added here as they're implemented:
-    // public MessageService messages() { ... }
+    // Future domain services:
     // public GroupService groups() { ... }
     // public UserService users() { ... }
     // public ReactionService reactions() { ... }
-    // public ZavaListener listener() { ... }
     // etc.
 }
