@@ -75,4 +75,43 @@ public final class AesGcm {
             throw new ZavaCryptoException("AES-GCM decrypt failed", e);
         }
     }
+
+    /**
+     * Decrypt and return raw bytes (for type 2: AES-GCM + zlib, where output is compressed data).
+     */
+    public static byte[] decryptBytes(String cipherKey, byte[] payload) {
+        if (payload.length < MIN_PAYLOAD_LENGTH) {
+            throw new ZavaCryptoException(
+                    "AES-GCM payload too short: expected at least " + MIN_PAYLOAD_LENGTH
+                            + " bytes, got " + payload.length);
+        }
+
+        try {
+            byte[] keyBytes = Base64.getDecoder().decode(cipherKey);
+
+            byte[] iv = new byte[IV_LENGTH];
+            System.arraycopy(payload, 0, iv, 0, IV_LENGTH);
+
+            byte[] aad = new byte[AAD_LENGTH];
+            System.arraycopy(payload, IV_LENGTH, aad, 0, AAD_LENGTH);
+
+            int dataOffset = IV_LENGTH + AAD_LENGTH;
+            int dataLength = payload.length - dataOffset;
+            byte[] ciphertext = new byte[dataLength];
+            System.arraycopy(payload, dataOffset, ciphertext, 0, dataLength);
+
+            SecretKeySpec keySpec = new SecretKeySpec(keyBytes, "AES");
+            GCMParameterSpec gcmSpec = new GCMParameterSpec(TAG_BITS, iv);
+
+            Cipher cipher = Cipher.getInstance(TRANSFORMATION);
+            cipher.init(Cipher.DECRYPT_MODE, keySpec, gcmSpec);
+            cipher.updateAAD(aad);
+
+            return cipher.doFinal(ciphertext);
+        } catch (ZavaCryptoException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ZavaCryptoException("AES-GCM decrypt failed", e);
+        }
+    }
 }

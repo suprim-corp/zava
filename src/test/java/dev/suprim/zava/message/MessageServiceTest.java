@@ -208,4 +208,57 @@ class MessageServiceTest {
         assertThrows(Exception.class, () ->
                 messageService.forward("msg", List.of(), ThreadType.USER, "id", 0));
     }
+
+    @Test @DisplayName("send group quote uses /api/group/quote")
+    void sendGroupQuote() throws Exception {
+        enqueueSuccess(MAPPER.createObjectNode().put("msgId", 333));
+        Quote quote = Quote.builder().ownerId("o").globalMsgId("g").cliMsgId("c").ts(0).msg("m").build();
+        messageService.send("reply", "group-1", ThreadType.GROUP, null, quote, 0);
+        assertTrue(server.takeRequest().getPath().contains("/api/group/quote"));
+    }
+
+    @Test @DisplayName("send group quote with mentions")
+    void sendGroupQuoteWithMentions() throws Exception {
+        enqueueSuccess(MAPPER.createObjectNode().put("msgId", 444));
+        Quote quote = Quote.builder().ownerId("o").globalMsgId("g").cliMsgId("c").ts(0).build();
+        List<Mention> mentions = List.of(new Mention("uid-1", 0, 5));
+        messageService.send("@u reply", "group-1", ThreadType.GROUP, mentions, quote, 60);
+        assertTrue(server.takeRequest().getPath().contains("/api/group/quote"));
+    }
+
+    @Test @DisplayName("send with TTL")
+    void sendWithTtl() throws Exception {
+        enqueueSuccess(MAPPER.createObjectNode().put("msgId", 555));
+        messageService.send("hi", "uid-1", ThreadType.USER, null, null, 30);
+        RecordedRequest req = server.takeRequest();
+        assertTrue(req.getPath().contains("/api/message/sms"));
+    }
+
+    @Test @DisplayName("delete group message")
+    void deleteGroupMessage() throws Exception {
+        enqueueSuccess(MAPPER.createObjectNode().put("status", 0));
+        messageService.delete("m", "c", "uid", "group-1", ThreadType.GROUP, false);
+        assertTrue(server.takeRequest().getPath().contains("/api/group/deletemsg"));
+    }
+
+    @Test @DisplayName("undo user message")
+    void undoUserMessage() throws Exception {
+        enqueueSuccess(MAPPER.createObjectNode().put("status", 0));
+        messageService.undo("m", "c", "uid-1", ThreadType.USER);
+        assertTrue(server.takeRequest().getPath().contains("/api/message/undo"));
+    }
+
+    @Test @DisplayName("forward to group")
+    void forwardGroup() throws Exception {
+        enqueueSuccess(MAPPER.createObjectNode());
+        messageService.forward("text", Arrays.asList("g-1"), ThreadType.GROUP, "orig", 30);
+        assertTrue(server.takeRequest().getPath().contains("/api/group/mforward"));
+    }
+
+    @Test @DisplayName("send with Mention.all()")
+    void sendWithMentionAll() throws Exception {
+        enqueueSuccess(MAPPER.createObjectNode().put("msgId", 666));
+        messageService.send("@all", "g-1", ThreadType.GROUP, List.of(Mention.all(0, 4)));
+        assertTrue(server.takeRequest().getPath().contains("/api/group/mention"));
+    }
 }

@@ -67,8 +67,8 @@ public final class EventDecoder {
                     }
                     String urlDecoded = percentDecode(rawData);
                     byte[] decoded = Base64.getDecoder().decode(urlDecoded);
-                    String decrypted = AesGcm.decrypt(cipherKey, decoded);
-                    byte[] decompressed = inflate(decrypted.getBytes(StandardCharsets.UTF_8));
+                    byte[] decryptedBytes = AesGcm.decryptBytes(cipherKey, decoded);
+                    byte[] decompressed = inflate(decryptedBytes);
                     return MAPPER.readTree(new String(decompressed, StandardCharsets.UTF_8));
                 }
 

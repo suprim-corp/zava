@@ -499,4 +499,136 @@ class DomainServicesTest {
         new BusinessService(context, http, handler).addQuickMessage("hi", "Hello!");
         assertTrue(server.takeRequest().getPath().contains("/api/quickmessage/create"));
     }
+
+    // ── Additional MessageService ────────────────────────────────────────
+
+    @Test @DisplayName("sendSeenEvent POSTs to /api/message/seenv2")
+    void sendSeenEvent() throws Exception {
+        enqueueOk();
+        new MessageService(context, http, handler).sendSeenEvent("100", "c1", "sender", "uid1", ThreadType.USER);
+        assertTrue(server.takeRequest().getPath().contains("/api/message/seenv2"));
+    }
+
+    @Test @DisplayName("sendSeenEvent group POSTs to /api/group/seenv2")
+    void sendSeenEventGroup() throws Exception {
+        enqueueOk();
+        new MessageService(context, http, handler).sendSeenEvent("100", "c1", null, "g1", ThreadType.GROUP);
+        assertTrue(server.takeRequest().getPath().contains("/api/group/seenv2"));
+    }
+
+    @Test @DisplayName("sendDeliveredEvent POSTs to /api/message/deliveredv2")
+    void sendDeliveredEvent() throws Exception {
+        enqueueOk();
+        new MessageService(context, http, handler).sendDeliveredEvent("100", "uid1", ThreadType.USER);
+        assertTrue(server.takeRequest().getPath().contains("/api/message/deliveredv2"));
+    }
+
+    @Test @DisplayName("sendDeliveredEvent group")
+    void sendDeliveredEventGroup() throws Exception {
+        enqueueOk();
+        new MessageService(context, http, handler).sendDeliveredEvent("100", "g1", ThreadType.GROUP);
+        assertTrue(server.takeRequest().getPath().contains("/api/group/deliveredv2"));
+    }
+
+    @Test @DisplayName("sendSticker group POSTs to /api/group/sticker")
+    void sendStickerGroup() throws Exception {
+        enqueueOk();
+        new MessageService(context, http, handler).sendSticker(1, 1, "g1", ThreadType.GROUP);
+        assertTrue(server.takeRequest().getPath().contains("/api/group/sticker"));
+    }
+
+    @Test @DisplayName("sendTypingEvent group POSTs to /api/group/typing")
+    void sendTypingGroup() throws Exception {
+        enqueueOk();
+        new MessageService(context, http, handler).sendTypingEvent("g1", ThreadType.GROUP);
+        assertTrue(server.takeRequest().getPath().contains("/api/group/typing"));
+    }
+
+    // ── Additional GroupService ──────────────────────────────────────────
+
+    @Test @DisplayName("updateSettings GETs /api/group/setting/update")
+    void updateSettings() throws Exception {
+        enqueueOk();
+        new GroupService(context, http, handler).updateSettings("g1", java.util.Map.of("blockName", 1));
+        assertTrue(server.takeRequest().getPath().contains("/api/group/setting/update"));
+    }
+
+    // ── Additional SettingsService ───────────────────────────────────────
+
+    @Test @DisplayName("deleteChat group POSTs to /api/group/deleteconver")
+    void deleteChatGroup() throws Exception {
+        enqueueOk();
+        new SettingsService(context, http, handler).deleteChat("g1", ThreadType.GROUP, true);
+        assertTrue(server.takeRequest().getPath().contains("/api/group/deleteconver"));
+    }
+
+    @Test @DisplayName("setMute group")
+    void setMuteGroup() throws Exception {
+        enqueueOk();
+        new SettingsService(context, http, handler).setMute("g1", ThreadType.GROUP, 3600, true);
+        assertTrue(server.takeRequest().getPath().contains("/api/social/profile/setmute"));
+    }
+
+    @Test @DisplayName("setMute unmute")
+    void setMuteUnmute() throws Exception {
+        enqueueOk();
+        new SettingsService(context, http, handler).setMute("uid1", ThreadType.USER, 0, false);
+        assertTrue(server.takeRequest().getPath().contains("/api/social/profile/setmute"));
+    }
+
+    @Test @DisplayName("getPinConversations GETs /api/pinconvers/list")
+    void getPinConversations() throws Exception {
+        enqueueOk();
+        new SettingsService(context, http, handler).getPinConversations();
+        assertTrue(server.takeRequest().getPath().contains("/api/pinconvers/list"));
+    }
+
+    @Test @DisplayName("setPinConversation POSTs to /api/pinconvers/updatev2")
+    void setPinConversation() throws Exception {
+        enqueueOk();
+        new SettingsService(context, http, handler).setPinConversation("uid1", true);
+        assertTrue(server.takeRequest().getPath().contains("/api/pinconvers/updatev2"));
+    }
+
+    // ── Additional BoardService ──────────────────────────────────────────
+
+    @Test @DisplayName("editNote POSTs to /api/board/topic/updatev2")
+    void editNote() throws Exception {
+        enqueueOk();
+        new BoardService(context, http, handler).editNote("g1", "topic-1", "Updated", null, null);
+        assertTrue(server.takeRequest().getPath().contains("/api/board/topic/updatev2"));
+    }
+
+    @Test @DisplayName("getListBoard with params")
+    void getListBoardParams() throws Exception {
+        enqueueOk();
+        new BoardService(context, http, handler).getListBoard("g1", 1, 20, 2);
+        assertTrue(server.takeRequest().getPath().contains("/api/board/list"));
+    }
+
+    // ── Additional PollService ───────────────────────────────────────────
+
+    @Test @DisplayName("addOptions GETs /api/poll/option/add")
+    void addPollOptions() throws Exception {
+        enqueueOk();
+        new PollService(context, http, handler).addOptions(123, java.util.Arrays.asList("D", "E"));
+        assertTrue(server.takeRequest().getPath().contains("/api/poll/option/add"));
+    }
+
+    @Test @DisplayName("createPoll with full options")
+    void createPollFull() throws Exception {
+        enqueueOk();
+        new PollService(context, http, handler).createPoll("g1", "Q?", java.util.Arrays.asList("A", "B"),
+                true, true, true, 1000);
+        assertTrue(server.takeRequest().getPath().contains("/api/poll/create"));
+    }
+
+    // ── Additional ProfileService ────────────────────────────────────────
+
+    @Test @DisplayName("updateBio with null")
+    void updateBioNull() throws Exception {
+        enqueueOk();
+        new ProfileService(context, http, handler).updateBio(null);
+        assertTrue(server.takeRequest().getPath().contains("/api/social/profile/update"));
+    }
 }

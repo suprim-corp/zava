@@ -1,5 +1,11 @@
 # Zava
 
+[![CI](https://github.com/suprim-corp/zava/actions/workflows/ci.yml/badge.svg)](https://github.com/suprim-corp/zava/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/suprim-corp/zava/branch/main/graph/badge.svg)](https://codecov.io/gh/suprim-corp/zava)
+![Java](https://img.shields.io/badge/Java-11+-orange?logo=openjdk)
+![Maven](https://img.shields.io/badge/Maven-3.9+-blue?logo=apachemaven)
+![License](https://img.shields.io/badge/License-MIT-green)
+
 Unofficial Java SDK for Zalo Web API.
 
 Port of [zca-js](https://github.com/RFS-ADRENO/zca-js) to Java.

@@ -148,6 +148,57 @@
             </plugin>
 
             <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.12</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>check</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <rule>
+                                    <element>BUNDLE</element>
+                                    <limits>
+                                        <limit>
+                                            <counter>INSTRUCTION</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <!-- 88% - remaining ~12% is multipart upload code (changeAvatar),
+                                                 IOException catch blocks, and Connection/QrLogin/FileUploader
+                                                 that require real Zalo server or WebSocket -->
+                                            <minimum>0.88</minimum>
+                                        </limit>
+                                    </limits>
+                                </rule>
+                            </rules>
+                            <!-- Exclude classes that require real server, WebSocket, or multipart upload -->
+                            <excludes>
+                                <exclude>dev/suprim/zava/auth/QrLogin*.class</exclude>
+                                <exclude>dev/suprim/zava/auth/CookieLogin.class</exclude>
+                                <exclude>dev/suprim/zava/internal/ws/Connection.class</exclude>
+                                <exclude>dev/suprim/zava/internal/http/FileUploader*.class</exclude>
+                            </excludes>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-enforcer-plugin</artifactId>
                 <version>3.5.0</version>
