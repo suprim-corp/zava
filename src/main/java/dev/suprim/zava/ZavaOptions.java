@@ -12,6 +12,7 @@ public final class ZavaOptions {
     private final int apiType;
     private final int apiVersion;
     private final Proxy proxy;
+    private final String loginBaseUrl;
 
     private ZavaOptions(Builder builder) {
         this.selfListen = builder.selfListen;
@@ -19,6 +20,7 @@ public final class ZavaOptions {
         this.apiType = builder.apiType;
         this.apiVersion = builder.apiVersion;
         this.proxy = builder.proxy;
+        this.loginBaseUrl = builder.loginBaseUrl;
     }
 
     public static ZavaOptions defaults() {
@@ -34,6 +36,7 @@ public final class ZavaOptions {
     public int getApiType() { return apiType; }
     public int getApiVersion() { return apiVersion; }
     public Proxy getProxy() { return proxy; }
+    public String getLoginBaseUrl() { return loginBaseUrl; }
 
     public static final class Builder {
         private boolean selfListen = false;
@@ -41,6 +44,7 @@ public final class ZavaOptions {
         private int apiType = 30;
         private int apiVersion = 671;
         private Proxy proxy = null;
+        private String loginBaseUrl = "https://wpa.chat.zalo.me/api/login";
 
         private Builder() {}
 
@@ -49,6 +53,8 @@ public final class ZavaOptions {
         public Builder apiType(int apiType) { this.apiType = apiType; return this; }
         public Builder apiVersion(int apiVersion) { this.apiVersion = apiVersion; return this; }
         public Builder proxy(Proxy proxy) { this.proxy = proxy; return this; }
+        /** Override login base URL (for testing). */
+        public Builder loginBaseUrl(String loginBaseUrl) { this.loginBaseUrl = loginBaseUrl; return this; }
 
         public ZavaOptions build() {
             return new ZavaOptions(this);

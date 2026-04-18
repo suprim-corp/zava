@@ -1,0 +1,4 @@
+ignore:
+  - "src/main/java/dev/suprim/zava/auth/QrLogin.java"
+  - "src/main/java/dev/suprim/zava/internal/ws/Connection.java"
+  - "src/main/java/dev/suprim/zava/internal/http/FileUploader.java"

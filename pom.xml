@@ -176,20 +176,17 @@
                                     <element>BUNDLE</element>
                                     <limits>
                                         <limit>
-                                            <counter>INSTRUCTION</counter>
+                                            <counter>LINE</counter>
                                             <value>COVEREDRATIO</value>
-                                            <!-- 88% - remaining ~12% is multipart upload code (changeAvatar),
-                                                 IOException catch blocks, and Connection/QrLogin/FileUploader
-                                                 that require real Zalo server or WebSocket -->
-                                            <minimum>0.88</minimum>
+                                            <minimum>0.90</minimum>
                                         </limit>
                                     </limits>
                                 </rule>
                             </rules>
-                            <!-- Exclude classes that require real server, WebSocket, or multipart upload -->
+                            <!-- Exclude from CHECK only (still in report for Codecov).
+                                 These classes require real Zalo server / WebSocket / multipart infra. -->
                             <excludes>
                                 <exclude>dev/suprim/zava/auth/QrLogin*.class</exclude>
-                                <exclude>dev/suprim/zava/auth/CookieLogin.class</exclude>
                                 <exclude>dev/suprim/zava/internal/ws/Connection.class</exclude>
                                 <exclude>dev/suprim/zava/internal/http/FileUploader*.class</exclude>
                             </excludes>

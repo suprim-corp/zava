@@ -88,7 +88,7 @@ public class ParamsEncryptor {
         return AesCbc.encodeLogin(Constants.LOGIN_ENCRYPT_KEY, msg, true, true);
     }
 
-    static String createEncryptKey(String zcidExt, String zcid) {
+    public static String createEncryptKey(String zcidExt, String zcid) {
         String md5Upper = Hashing.md5(zcidExt).toUpperCase();
 
         List<Character> md5Even = evenChars(md5Upper);

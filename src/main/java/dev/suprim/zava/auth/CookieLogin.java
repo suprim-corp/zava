@@ -146,7 +146,7 @@ public class CookieLogin {
         urlParams.put("nretry", 0);
 
         String url = Urls.build(
-                Constants.LOGIN_BASE_URL + "/getLoginInfo",
+                options.getLoginBaseUrl() + "/getLoginInfo",
                 urlParams, true, ctx);
 
         Response response = http.get(url);
@@ -222,7 +222,7 @@ public class CookieLogin {
         urlParams.put("signkey", signKey);
 
         String url = Urls.build(
-                Constants.LOGIN_BASE_URL + "/getServerInfo",
+                options.getLoginBaseUrl() + "/getServerInfo",
                 urlParams, false, ctx);
 
         Response response = http.get(url);

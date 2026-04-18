@@ -1,6 +1,7 @@
 # Zava
 
 [![CI](https://github.com/suprim-corp/zava/actions/workflows/ci.yml/badge.svg)](https://github.com/suprim-corp/zava/actions/workflows/ci.yml)
+[![JitPack](https://jitpack.io/v/suprim-corp/zava.svg)](https://jitpack.io/#suprim-corp/zava)
 [![codecov](https://codecov.io/gh/suprim-corp/zava/branch/main/graph/badge.svg)](https://codecov.io/gh/suprim-corp/zava)
 ![Java](https://img.shields.io/badge/Java-11+-orange?logo=openjdk)
 ![Maven](https://img.shields.io/badge/Maven-3.9+-blue?logo=apachemaven)
@@ -25,11 +26,20 @@ Port of [zca-js](https://github.com/RFS-ADRENO/zca-js) to Java.
 
 ## Installation
 
+Add the JitPack repository and dependency:
+
 ```xml
+<repositories>
+    <repository>
+        <id>jitpack.io</id>
+        <url>https://jitpack.io</url>
+    </repository>
+</repositories>
+
 <dependency>
-    <groupId>dev.suprim</groupId>
+    <groupId>com.github.suprim-corp</groupId>
     <artifactId>zava</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>0.1.0</version>
 </dependency>
 ```
 

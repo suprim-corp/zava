@@ -1,0 +1,12 @@
+jdk:
+  - openjdk11
+
+before_install:
+  - curl -s "https://get.sdkman.io" | bash
+  - source "$HOME/.sdkman/bin/sdkman-init.sh"
+  - sdk install maven 3.9.15
+  - sdk use maven 3.9.15
+
+install:
+  - source "$HOME/.sdkman/bin/sdkman-init.sh"
+  - mvn clean install -DskipTests
