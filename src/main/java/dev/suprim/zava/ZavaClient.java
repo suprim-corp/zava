@@ -3,6 +3,7 @@ package dev.suprim.zava;
 import dev.suprim.zava.board.BoardService;
 import dev.suprim.zava.business.BusinessService;
 import dev.suprim.zava.group.GroupService;
+import dev.suprim.zava.internal.http.FileUploader;
 import dev.suprim.zava.internal.http.HttpClient;
 import dev.suprim.zava.internal.http.ResponseHandler;
 import dev.suprim.zava.internal.session.Context;
@@ -43,6 +44,7 @@ public class ZavaClient {
     private volatile BoardService boardService;
     private volatile ReminderService reminderService;
     private volatile BusinessService businessService;
+    private volatile FileUploader fileUploader;
     private volatile ZavaListener listener;
 
     ZavaClient(Context context) {
@@ -139,6 +141,14 @@ public class ZavaClient {
             if (businessService == null) businessService = new BusinessService(context, httpClient, responseHandler);
         }
         return businessService;
+    }
+
+    /** File upload: images, videos, files (chunked). */
+    public FileUploader uploader() {
+        if (fileUploader == null) synchronized (this) {
+            if (fileUploader == null) fileUploader = new FileUploader(context, httpClient, responseHandler);
+        }
+        return fileUploader;
     }
 
     /** Real-time event listener with typed callbacks. */

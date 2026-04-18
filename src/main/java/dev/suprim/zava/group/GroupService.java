@@ -263,4 +263,49 @@ public class GroupService extends BaseService {
     public JsonNode getChatHistory(String groupId) {
         return getChatHistory(groupId, 50);
     }
+
+    /**
+     * Change a group's avatar.
+     *
+     * @param groupId   the group ID
+     * @param imageData raw image bytes (JPEG/PNG)
+     * @param width     original image width
+     * @param height    original image height
+     */
+    public JsonNode changeAvatar(String groupId, byte[] imageData, int width, int height) {
+        Objects.requireNonNull(groupId, "groupId must not be null");
+        Objects.requireNonNull(imageData, "imageData must not be null");
+
+        try {
+            Map<String, Object> params = new LinkedHashMap<>();
+            params.put("grid", groupId);
+            params.put("avatarSize", 120);
+            params.put("clientId", System.currentTimeMillis());
+            params.put("imei", context.getImei());
+            params.put("originWidth", width);
+            params.put("originHeight", height);
+
+            String encrypted = dev.suprim.zava.internal.crypto.AesCbc.encodeAES(
+                    context.getSecretKey(), MAPPER.writeValueAsString(params));
+
+            String url = context.getServiceUrl("file") + "/api/group/upavatar"
+                    + "?zpw_ver=" + context.getOptions().getApiVersion()
+                    + "&zpw_type=" + context.getOptions().getApiType();
+
+            okhttp3.MultipartBody body = new okhttp3.MultipartBody.Builder()
+                    .setType(okhttp3.MultipartBody.FORM)
+                    .addFormDataPart("params", encrypted)
+                    .addFormDataPart("fileContent", "avatar.jpg",
+                            okhttp3.RequestBody.create(imageData,
+                                    okhttp3.MediaType.parse("image/jpeg")))
+                    .build();
+
+            okhttp3.Response response = http.postMultipart(url, body);
+            return responseHandler.handleRaw(response, true);
+        } catch (dev.suprim.zava.exception.ZavaException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new dev.suprim.zava.exception.ZavaException("Failed to change group avatar", e);
+        }
+    }
 }
