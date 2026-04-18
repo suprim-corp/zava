@@ -1,16 +1,22 @@
 package dev.suprim.zava;
 
+import dev.suprim.zava.group.GroupService;
 import dev.suprim.zava.internal.http.HttpClient;
 import dev.suprim.zava.internal.http.ResponseHandler;
 import dev.suprim.zava.internal.session.Context;
 import dev.suprim.zava.listener.ZavaListener;
 import dev.suprim.zava.message.MessageService;
+import dev.suprim.zava.poll.PollService;
+import dev.suprim.zava.profile.ProfileService;
+import dev.suprim.zava.reaction.ReactionService;
+import dev.suprim.zava.settings.SettingsService;
+import dev.suprim.zava.sticker.StickerService;
+import dev.suprim.zava.user.UserService;
 
 /**
  * The main client returned after a successful login.
  *
- * <p>Provides access to all API services (messages, groups, users, etc.)
- * and the real-time event listener.
+ * <p>Provides access to all API services and the real-time event listener.
  *
  * <pre>{@code
  * ZavaClient client = zava.login(credentials);
@@ -25,6 +31,13 @@ public class ZavaClient {
 
     // Lazy-initialized services
     private volatile MessageService messageService;
+    private volatile UserService userService;
+    private volatile GroupService groupService;
+    private volatile ReactionService reactionService;
+    private volatile StickerService stickerService;
+    private volatile PollService pollService;
+    private volatile ProfileService profileService;
+    private volatile SettingsService settingsService;
     private volatile ZavaListener listener;
 
     ZavaClient(Context context) {
@@ -33,71 +46,114 @@ public class ZavaClient {
         this.responseHandler = new ResponseHandler(context);
     }
 
-    /**
-     * Get the logged-in user's UID.
-     */
-    public String getUid() {
-        return context.getUid();
-    }
+    /** Get the logged-in user's UID. */
+    public String getUid() { return context.getUid(); }
 
-    /**
-     * Message operations: send, delete, undo, forward.
-     */
+    /** Message operations: send, delete, undo, forward. */
     public MessageService messages() {
         if (messageService == null) {
             synchronized (this) {
-                if (messageService == null) {
+                if (messageService == null)
                     messageService = new MessageService(context, httpClient, responseHandler);
-                }
             }
         }
         return messageService;
     }
 
-    /**
-     * Real-time event listener.
-     *
-     * <pre>{@code
-     * client.listener()
-     *     .onMessage(msg -> System.out.println(msg))
-     *     .start();
-     * }</pre>
-     */
+    /** User/friend operations: find, list, block/unblock, alias. */
+    public UserService users() {
+        if (userService == null) {
+            synchronized (this) {
+                if (userService == null)
+                    userService = new UserService(context, httpClient, responseHandler);
+            }
+        }
+        return userService;
+    }
+
+    /** Group operations: info, create, members, settings. */
+    public GroupService groups() {
+        if (groupService == null) {
+            synchronized (this) {
+                if (groupService == null)
+                    groupService = new GroupService(context, httpClient, responseHandler);
+            }
+        }
+        return groupService;
+    }
+
+    /** Reaction operations: add reactions. */
+    public ReactionService reactions() {
+        if (reactionService == null) {
+            synchronized (this) {
+                if (reactionService == null)
+                    reactionService = new ReactionService(context, httpClient, responseHandler);
+            }
+        }
+        return reactionService;
+    }
+
+    /** Sticker operations: search. */
+    public StickerService stickers() {
+        if (stickerService == null) {
+            synchronized (this) {
+                if (stickerService == null)
+                    stickerService = new StickerService(context, httpClient, responseHandler);
+            }
+        }
+        return stickerService;
+    }
+
+    /** Poll operations: create, detail. */
+    public PollService polls() {
+        if (pollService == null) {
+            synchronized (this) {
+                if (pollService == null)
+                    pollService = new PollService(context, httpClient, responseHandler);
+            }
+        }
+        return pollService;
+    }
+
+    /** Profile operations: account info. */
+    public ProfileService profile() {
+        if (profileService == null) {
+            synchronized (this) {
+                if (profileService == null)
+                    profileService = new ProfileService(context, httpClient, responseHandler);
+            }
+        }
+        return profileService;
+    }
+
+    /** Settings operations: mute, labels. */
+    public SettingsService settings() {
+        if (settingsService == null) {
+            synchronized (this) {
+                if (settingsService == null)
+                    settingsService = new SettingsService(context, httpClient, responseHandler);
+            }
+        }
+        return settingsService;
+    }
+
+    /** Real-time event listener. */
     public ZavaListener listener() {
         if (listener == null) {
             synchronized (this) {
-                if (listener == null) {
+                if (listener == null)
                     listener = new ZavaListener(context, httpClient.getOkHttpClient());
-                }
             }
         }
         return listener;
     }
 
-    /**
-     * Get the session context (internal, for service classes).
-     */
-    public Context getContext() {
-        return context;
-    }
+    /** Get the session context (internal). */
+    public Context getContext() { return context; }
 
-    /**
-     * Get the HTTP client (internal, for service classes).
-     */
-    public HttpClient getHttpClient() {
-        return httpClient;
-    }
+    /** Get the HTTP client (internal). */
+    public HttpClient getHttpClient() { return httpClient; }
 
-    /**
-     * Get the response handler (internal, for service classes).
-     */
-    public ResponseHandler getResponseHandler() {
-        return responseHandler;
-    }
-
-    // Future domain services:
-    // public GroupService groups() { ... }
-    // public UserService users() { ... }
-    // public ReactionService reactions() { ... }
-    // etc.
+    /** Get the response handler (internal). */
+    public ResponseHandler getResponseHandler() { return responseHandler; }
 }
