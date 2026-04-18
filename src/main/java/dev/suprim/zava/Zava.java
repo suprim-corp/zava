@@ -2,16 +2,25 @@ package dev.suprim.zava;
 
 import dev.suprim.zava.auth.CookieLogin;
 import dev.suprim.zava.auth.Credentials;
+import dev.suprim.zava.auth.QrLogin;
 import dev.suprim.zava.internal.session.Context;
+
+import java.util.function.Consumer;
 
 /**
  * Entry point for the Zava SDK.
  *
  * <pre>{@code
+ * // Cookie login
  * Zava zava = new Zava();
  * ZavaClient client = zava.login(credentials);
  *
- * client.messages().send("Hello!", threadId, ThreadType.USER);
+ * // QR login
+ * ZavaClient client = zava.loginQR(event -> {
+ *     if (event.getType() == QrLogin.QrEventType.QR_GENERATED) {
+ *         System.out.println("Scan QR code at qr.png");
+ *     }
+ * });
  * }</pre>
  */
 public final class Zava {
@@ -29,8 +38,6 @@ public final class Zava {
     /**
      * Login using cookie-based credentials.
      *
-     * <p>Flow: parse cookies → getLoginInfo → getServerInfo → return client.
-     *
      * @param credentials the login credentials (imei, cookies, userAgent)
      * @return a connected {@link ZavaClient}
      * @throws dev.suprim.zava.exception.ZavaAuthException if login fails
@@ -39,6 +46,38 @@ public final class Zava {
         CookieLogin cookieLogin = new CookieLogin(options);
         Context context = cookieLogin.login(credentials);
         return new ZavaClient(context);
+    }
+
+    /**
+     * Login using QR code.
+     *
+     * <p>Generates a QR code, waits for scan + confirm on phone,
+     * then automatically logs in with the received cookies.
+     *
+     * @param callback optional callback for QR events
+     * @return a connected {@link ZavaClient}
+     * @throws dev.suprim.zava.exception.ZavaAuthException if login fails
+     */
+    public ZavaClient loginQR(Consumer<QrLogin.QrEvent> callback) {
+        return loginQR(null, null, callback);
+    }
+
+    /**
+     * Login using QR code with custom user agent and language.
+     *
+     * @param userAgent custom user agent (null for default)
+     * @param language  language code (null for "vi")
+     * @param callback  optional callback for QR events
+     * @return a connected {@link ZavaClient}
+     * @throws dev.suprim.zava.exception.ZavaAuthException if login fails
+     */
+    public ZavaClient loginQR(String userAgent, String language, Consumer<QrLogin.QrEvent> callback) {
+        QrLogin qrLogin = new QrLogin();
+        QrLogin.QrLoginResult result = qrLogin.login(userAgent, language, callback);
+
+        // Use the QR result to do a cookie login
+        Credentials credentials = result.toCredentials();
+        return login(credentials);
     }
 
     /**
